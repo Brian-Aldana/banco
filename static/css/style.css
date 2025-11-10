@@ -1,0 +1,122 @@
+/* static/css/style.css */
+
+/* 1. Importar la fuente de Lulo (o una similar) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* 2. Definir los colores de Lulo Bank */
+:root {
+    --lulo-fucsia: #E4007B;
+    --lulo-morado: #2D005B;
+    --lulo-lila: #F3F0F6;
+    --blanco: #FFFFFF;
+    --gris-texto: #5c5c5c;
+    --sombra-tarjeta: 0 4px 15px rgba(45, 0, 91, 0.05);
+}
+
+/* 3. Reseteo y Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--lulo-lila); /* Fondo lila muy claro */
+    color: var(--gris-texto);
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* 4. Componentes "Lulo" reutilizables */
+
+/* Estilo de Botón (clave) */
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 99px; /* Totalmente redondeado */
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Botón Primario (Fucsia) */
+.btn-primary {
+    background-color: var(--lulo-fucsia);
+    color: var(--blanco);
+}
+
+/* Botón Secundario (Morado) */
+.btn-secondary {
+    background-color: var(--lulo-morado);
+    color: var(--blanco);
+}
+
+/* Inputs de Formulario */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--lulo-morado);
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 12px; /* Bordes generosos */
+    background-color: var(--blanco);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--lulo-fucsia);
+    box-shadow: 0 0 0 3px rgba(228, 0, 123, 0.2);
+}
+
+/* Tarjetas (Cards) */
+.card {
+    background: var(--blanco);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--sombra-tarjeta);
+    margin-bottom: 1.5rem;
+}
+
+h1, h2, h3 {
+    color: var(--lulo-morado);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* --- AÑADIDO: Estilos para el enlace de registro --- */
+.register-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+}
+.register-link a {
+    color: var(--lulo-fucsia);
+    font-weight: 600;
+    text-decoration: none;
+}
+.register-link a:hover {
+    text-decoration: underline;
+}

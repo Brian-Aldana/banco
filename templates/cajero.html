@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Cajero - Banco Ucundinamarca</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --gris-borde: #eee;
+            --verde-op: #e8f5e9;
+            --rojo-op: #ffebee;
+        }
+        .container { max-width: 1400px; }
+        .layout-cajero {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            min-height: 90vh;
+        }
+        .col-turnos, .col-cliente {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .col-turnos { border-right: 2px solid var(--gris-borde); padding-right: 2rem; }
+        .turno-card { background: var(--lulo-morado); color: white; }
+        .turno-card h2 { color: white; }
+        .turno-card .numero-turno {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--lulo-fucsia);
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .lista-turnos-espera li {
+            font-size: 0.9rem;
+            padding: 4px 0;
+        }
+        #btn-llamar-siguiente { width: 100%; }
+        
+        /* Columna Cliente */
+        #cliente-info { display: none; } /* Oculto hasta que se carga un cliente */
+        #cliente-perfil {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        #cliente-perfil h2 { margin-bottom: 0.5rem; }
+        .layout-productos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .producto-card { border: 1px solid var(--gris-borde); }
+        .producto-card h4 {
+            border-bottom: 1px solid var(--gris-borde);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .operacion-item {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .operacion-item .form-control { flex-grow: 1; }
+        .btn-verde { background-color: #4CAF50; color: white; }
+        .btn-rojo { background-color: #f44336; color: white; }
+        .btn-cancelar { background-color: #757575; color: white; }
+
+        /* Modal (igual que antes) */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border-radius: 20px; max-width: 800px; }
+        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        #tabla-amortizacion { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        #tabla-amortizacion th, #tabla-amortizacion td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        #tabla-amortizacion th { background-color: var(--lulo-lila); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header" style="padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 2px solid var(--gris-borde);">
+            <h1>Panel de Cajero - Banco Ucundinamarca</h1>
+            <a href="#" id="logout-button" class="btn btn-secondary">Cerrar Sesión (Cajero)</a>
+        </header>
+
+        <div class="layout-cajero">
+            
+            <aside class="col-turnos">
+                
+                <div class="card turno-card">
+                    <h2>Turno Actual</h2>
+                    <div id="turno-actual-display" class="numero-turno">---</div>
+                    <h3 id="turno-actual-nombre" style="color: white; text-align: center; font-weight: 400;">(En espera...)</h3>
+                    <button id="btn-llamar-siguiente" class="btn btn-primary">Llamar Siguiente (20/60/20)</button>
+                </div>
+                
+                <div class="card">
+                    <h4>Filas en Espera</h4>
+                    <ul id="lista-preferencial" class="lista-turnos-espera"><strong>Preferencial (20%):</strong> <li>---</li></ul>
+                    <ul id="lista-afiliado" class="lista-turnos-espera"><strong>Afiliado (60%):</strong> <li>---</li></ul>
+                    <ul id="lista-no_afiliado" class="lista-turnos-espera"><strong>No Afiliado (20%):</strong> <li>---</li></ul>
+                </div>
+                
+                <div class="card">
+                    <h4>Historial de Cajero (LIFO)</h4>
+                    <ul id="historial-lifo" style="font-size: 0.8rem; padding-left: 1.5rem; max-height: 300px; overflow-y: auto;">
+                        <li>Cargando...</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="col-cliente">
+                
+                <div class="card">
+                    <form id="form-buscar-cliente" style="display: flex; gap: 1rem;">
+                        <input type="text" id="search_term" class="form-control" placeholder="Buscar por Cédula (ID) o Email..." required>
+                        <button type="submit" class="btn btn-secondary">Buscar</button>
+                    </form>
+                </div>
+                
+                <div id="cliente-info" class="card">
+                    
+                    <div id="cliente-perfil">
+                        <div>
+                            <h2 id="cliente-nombre"></h2>
+                            <p id="cliente-email" style="color: var(--gris-texto);"></p>
+                            <span id="cliente-tipo" class="btn" style="padding: 2px 8px; font-size: 0.8rem;"></span>
+                        </div>
+                        <button id="btn-afiliar-cliente" class="btn btn-primary">Afiliar Cliente</button>
+                    </div>
+                    
+                    <hr style="margin: 1.5rem 0; border-color: var(--gris-borde);">
+                    
+                    <div class="layout-productos">
+                        
+                        <div id="cuentas-container">
+                            <h3>Cuentas de Ahorro</h3>
+                            </div>
+                        
+                        <div id="creditos-container">
+                            <h3>Créditos y CDTs</h3>
+                            </div>
+                    </div>
+                </div>
+
+                <div id="card-registrar" class="card" style="display: none; background: var(--lulo-lila);">
+                    <h3>Afiliar Nuevo Cliente</h3>
+                    <form id="form-afiliar-cliente">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="reg-nombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="reg-email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Nacimiento</label>
+                            <input type="date" id="reg-fecha" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar Afiliado</button>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="modal-amortizacion" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" id="close-modal-btn">&times;</span>
+            <h2>Tabla de Amortización</h2>
+            <h3 id="cuota-fija-display"></h3>
+            <table id="tabla-amortizacion">
+                <thead> <tr><th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo Restante</th></tr> </thead>
+                <tbody id="tabla-amortizacion-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/cajero.js') }}"></script>
+</body>
+</html>

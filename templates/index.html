@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido - Banco Ucundinamarca</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--lulo-morado);
+        }
+        .main-menu {
+            max-width: 600px;
+            width: 100%;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .main-menu h1 {
+            color: var(--lulo-fucsia);
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .main-menu p {
+            color: var(--lulo-lila);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+        }
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        /* Hacemos que los 'a' se vean como botones gigantes */
+        .btn-menu {
+            display: block;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--blanco);
+            color: var(--lulo-morado);
+            border: 2px solid var(--lulo-lila);
+        }
+        .btn-menu:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border-color: var(--lulo-fucsia);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-menu">
+        <h1>Banco Ucundinamarca</h1>
+        <p>Selecciona tu punto de acceso al sistema</p>
+        
+        <div class="menu-options">
+            <a href="{{ url_for('cajero_login_page') }}" class="btn-menu">
+                👤 Soy Cajero (Empleado)
+            </a>
+            <a href="{{ url_for('login_page') }}" class="btn-menu">
+                🧑‍💼 Soy Cliente (Login)
+            </a>
+            <a href="{{ url_for('filas_page') }}" class="btn-menu">
+                📺 Ver Pantalla de Turnos
+            </a>
+        </div>
+    </div>
+</body>
+</html>

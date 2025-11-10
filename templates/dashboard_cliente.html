@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Banco Ucundinamarca</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--lulo-lila);
+            padding-bottom: 1rem;
+        }
+        .header h1 { margin-bottom: 0; }
+        .status-card {
+            margin-top: 2rem;
+            text-align: center;
+            padding: 3rem;
+        }
+        .status-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .status-card p {
+            font-size: 1.1rem;
+            color: var(--gris-texto);
+            margin-bottom: 2rem;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 99px;
+            font-weight: 600;
+            color: var(--blanco);
+        }
+        .status-badge.afiliado {
+            background-color: #4CAF50; /* Verde */
+        }
+        .status-badge.no-afiliado {
+            background-color: #f44336; /* Rojo */
+        }
+        #btn-afiliarme {
+            font-size: 1.2rem;
+            padding: 15px 30px;
+        }
+        #message {
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1 id="welcome-message">Hola, ...</h1>
+            <a href="#" id="logout-button" class="btn btn-primary">Cerrar Sesión</a>
+        </header>
+
+        <main>
+            <div class="card status-card">
+                <h2>Estado de tu Cuenta</h2>
+                <p>Actualmente eres un cliente:</p>
+                
+                <span id="status-display" class="status-badge">Cargando...</span>
+                
+                <div id="afiliacion-section" style="margin-top: 2rem; display: none;">
+                    <p>¡Conviértete en afiliado para obtener beneficios y atención prioritaria!</p>
+                    <button id="btn-afiliarme" class="btn btn-secondary">¡Quiero ser Afiliado Ahora!</button>
+                </div>
+                
+                <p id="message"></p>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard_cliente.js') }}"></script>
+</body>
+</html>
