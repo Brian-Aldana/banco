@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function actualizarPantallaTurnos() {
-        // ... (código existente sin cambios) ...
+        
         try {
             const response = await fetch('/filas/estado_actual');
             const data = await response.json();
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function cargarCliente(termino_busqueda) {
-        // ... (código existente sin cambios) ...
+        
         try {
             const response = await fetch('/cajero/buscar_cliente', {
                 method: 'POST',
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function limpiarCliente() {
-        // ... (código existente sin cambios) ...
+        
         CLIENTE_ACTUAL_ID = null;
         clienteInfo.style.display = 'none';
         cardRegistrar.style.display = 'none';
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Operaciones (Consignar / Retirar) ---
     window.realizarOperacion = async (tipo, id_cuenta) => {
-        // ... (código existente sin cambios) ...
+        
         const monto = document.getElementById(`monto-${id_cuenta}`).value;
         if (!monto || monto <= 0) {
             alert("Debe ingresar un monto válido.");
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Cancelar Cuenta ---
     window.cancelarCuenta = async (id_cuenta) => {
-        // ... (código existente sin cambios) ...
+        
         if (!confirm(`¿Está seguro que desea CANCELAR la cuenta N° ${id_cuenta}? Esta acción no se puede deshacer.`)) {
             return;
         }
@@ -270,13 +270,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Afiliar Cliente (Registro en ventanilla) ---
     btnAfiliarCliente.addEventListener('click', () => {
-        // ... (código existente sin cambios) ...
+        
         limpiarCliente();
         cardRegistrar.style.display = 'block';
     });
     
     formAfiliarCliente.addEventListener('submit', async (e) => {
-        // ... (código existente sin cambios) ...
+        
         e.preventDefault();
         const data = {
             nombre_completo: document.getElementById('reg-nombre').value,
@@ -310,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================
 
     async function cargarHistorialLifo() {
-        // ... (código existente sin cambios) ...
         const response = await fetch('/cajero/historial/ver');
         if (!response.ok) return; // Falla silenciosamente si la sesión expira
         const data = await response.json();
@@ -327,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================
 
     window.abrirModalAmortizacion = async (id_credito) => {
-        // ... (código existente sin cambios) ...
         const response = await fetch(`/credito/${id_credito}/amortizacion`);
         const data = await response.json();
         cuotaFijaDisplay.textContent = `Cuota Fija Mensual: $${formatCurrency(data.cuota_fija_mensual)}`;
@@ -357,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // HELPERS Y CARGA INICIAL
     // ===============================================
     
-    // --- ¡LOGOUT ACTUALIZADO! ---
     logoutButton.addEventListener('click', async (e) => {
         e.preventDefault();
         
@@ -368,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function formatCurrency(value) {
-        // ... (código existente sin cambios) ...
+        
         if (typeof value !== 'number') {
             value = parseFloat(value) || 0;
         }

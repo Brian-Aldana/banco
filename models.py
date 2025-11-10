@@ -8,7 +8,7 @@ import datetime
 
 # Configuración base para SQLAlchemy
 class Base(DeclarativeBase):
-  pass
+    pass
 
 db = SQLAlchemy(model_class=Base)
 
@@ -26,7 +26,7 @@ class TipoTransaccion(str, enum.Enum):
     CONSIGNACION = "Consignación"
     PAGO = "Pago"
 
-# --- Modelo de Cajero (Sin cambios) ---
+# --- Modelo de Cajero ---
 class Cajero(db.Model):
     __tablename__ = 'cajero'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -34,7 +34,7 @@ class Cajero(db.Model):
     password_hash: Mapped[str] = mapped_column(String(256))
     nombre: Mapped[str] = mapped_column(String(100))
 
-# --- Modelo de Cliente (ACTUALIZADO) ---
+# --- Modelo de Cliente ---
 
 class Cliente(db.Model):
     __tablename__ = 'cliente'
@@ -45,8 +45,7 @@ class Cliente(db.Model):
     fecha_nacimiento: Mapped[datetime.date] = mapped_column(Date)
     tiene_discapacidad: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # --- ¡CAMBIO AQUÍ! ---
-    # El default ahora es NO_AFILIADO
+    # El default es NO_AFILIADO
     tipo_cliente: Mapped[TipoCliente] = mapped_column(SQLAlchemyEnum(TipoCliente), default=TipoCliente.NO_AFILIADO)
 
     # Relaciones (POO)

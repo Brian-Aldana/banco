@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                // --- ¡CAMBIO AQUÍ! ---
                 // Redirigir al nuevo dashboard de cliente
                 window.location.href = '/dashboard_cliente'; 
                 

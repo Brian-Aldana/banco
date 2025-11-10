@@ -33,9 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            if (response.ok) { // 201 Creado
-                // --- ¡CAMBIO AQUÍ! ---
-                // El backend (app.py) ahora inicia sesión al registrar.
+            if (response.ok) {
                 // Lo enviamos directo a su dashboard.
                 messageElement.textContent = "¡Registro exitoso! Redirigiendo a tu perfil...";
                 messageElement.style.color = 'green';

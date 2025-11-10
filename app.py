@@ -28,7 +28,6 @@ migrate = Migrate(app, db)
 
 
 # === ESTADO GLOBAL (FIFO) ===
-# (Sin cambios)
 class Turno:
     def __init__(self, nombre, tipo, numero_turno, id_cliente=None):
         self.nombre, self.tipo, self.numero_turno, self.id_cliente = nombre, tipo, numero_turno, id_cliente
@@ -67,7 +66,7 @@ def cajero_login_page():
 def cajero_page():
     return render_template('cajero.html')
 
-# --- ¡NUEVA RUTA DE DASHBOARD DE CLIENTE! ---
+# --- RUTA DE DASHBOARD DE CLIENTE ---
 @app.route('/dashboard_cliente')
 @login_required # Protegida por el login de CLIENTE
 def dashboard_cliente_page():
@@ -81,7 +80,6 @@ def dashboard_cliente_page():
 
 @app.route('/filas/tomar_turno', methods=['POST'])
 def tomar_turno():
-    # (Sin cambios en esta lógica)
     data = request.json
     nombre = data.get('nombre')
     es_afiliado = data.get('es_afiliado', False)
@@ -103,7 +101,7 @@ def tomar_turno():
     filas[tipo_fila].append(nuevo_turno)
     return jsonify({"turno": nuevo_turno.to_dict()}), 201
 
-# --- ¡NUEVA RUTA DE VALIDACIÓN DE AFILIADO! ---
+# --- RUTA DE VALIDACIÓN DE AFILIADO ---
 @app.route('/filas/validar_afiliado', methods=['POST'])
 def validar_afiliado():
     """
@@ -136,12 +134,12 @@ def validar_afiliado():
 @app.route('/filas/llamar_siguiente', methods=['GET'])
 @cajero_login_required 
 def llamar_siguiente_turno():
-    # (Sin cambios, porcentajes 25/60/15)
     global turno_actual_en_caja
     colas_disponibles = []
     pesos = []
+    # --- Lógica de selección ponderada ---
     if len(filas["preferencial"]) > 0:
-        colas_disponibles.append("preferencial"); pesos.append(0.25)
+        colas_disponibles.append("preferencial"); pesos.append(0.25) 
     if len(filas["afiliado"]) > 0:
         colas_disponibles.append("afiliado"); pesos.append(0.6)
     if len(filas["no_afiliado"]) > 0:
@@ -156,7 +154,6 @@ def llamar_siguiente_turno():
 
 @app.route('/filas/estado_actual', methods=['GET'])
 def estado_filas():
-    # (Sin cambios)
     return jsonify({
         "turno_en_caja": turno_actual_en_caja.to_dict() if turno_actual_en_caja else None,
         "fila_preferencial": [t.numero_turno for t in filas['preferencial']],
@@ -181,13 +178,13 @@ def registrar_cliente():
             password_hash=hashed_password,
             fecha_nacimiento=datetime.date.fromisoformat(data['fecha_nacimiento']),
             tiene_discapacidad=data.get('tiene_discapacidad', False),
-            tipo_cliente=TipoCliente.NO_AFILIADO # <-- ¡CAMBIO!
+            tipo_cliente=TipoCliente.NO_AFILIADO
         )
         db.session.add(nuevo_cliente)
         db.session.commit()
         db.session.refresh(nuevo_cliente) # Para obtener el ID
 
-        # --- ¡NUEVO! Iniciar sesión automáticamente ---
+        # --- Iniciar sesión automáticamente ---
         session['cliente_id'] = nuevo_cliente.id
         session['cliente_nombre'] = nuevo_cliente.nombre_completo
         session['historial_acciones'] = [] 
@@ -371,7 +368,6 @@ def ver_historial_lifo_cajero():
 
 @app.cli.command("seed-db")
 def seed_db_command():
-    # (Actualizamos el seed para reflejar los nuevos cambios)
     
     # --- Crear Cajero de Prueba ---
     cajero = db.session.scalar(db.select(Cajero).where(Cajero.email == 'cajero@banco.com'))

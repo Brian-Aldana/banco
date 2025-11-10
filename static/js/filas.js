@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Lógica para ACTUALIZAR PANTALLA (Polling - Sin cambios)
+    // 3. Lógica para ACTUALIZAR PANTALLA
     const turnoActualDisplay = document.getElementById('turno-actual-display');
     const listaPreferencial = document.getElementById('lista-preferencial');
     const listaAfiliado = document.getElementById('lista-afiliado');

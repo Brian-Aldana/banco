@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             welcomeMessage.textContent = `Hola, ${data.nombre}`;
             
-            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-            // Se cambió 'AFILIADO' (mayúsculas) por 'Afiliado' (como está en el Enum)
             if (data.tipo_cliente === 'Afiliado') {
                 statusDisplay.textContent = 'AFILIADO';
                 statusDisplay.className = 'status-badge afiliado';

@@ -7,7 +7,6 @@ import datetime
 # --- Lógica Pura (Amortización) ---
 
 def calcular_tabla_amortizacion(monto_prestamo: float, tasa_interes_anual: float, plazo_meses: int):
-    # (Esta función es exactamente la misma que te di antes, es lógica pura)
     if tasa_interes_anual <= 0 or plazo_meses <= 0:
         return None, []
     
@@ -53,7 +52,6 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'cliente_id' not in session:
             # Si es una petición de API (JSON), devuelve error JSON
-            # Aquí se usa 'request', por eso se debe importar
             if request.accept_mimetypes.best_match(['application/json']) == 'application/json':
                 return jsonify({"error": "No autorizado. Inicie sesión."}), 401
             # Si es una petición de página, redirige al login
@@ -62,7 +60,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ¡NUEVO DECORADOR! ---
 def cajero_login_required(f):
     """
     Decorador para rutas que requieren que un CAJERO haya iniciado sesión.
@@ -72,7 +69,6 @@ def cajero_login_required(f):
     def decorated_function(*args, **kwargs):
         if 'cajero_id' not in session:
             # Si es una petición de API (JSON), devuelve error JSON
-            # Aquí también se usa 'request'
             if request.accept_mimetypes.best_match(['application/json']) == 'application/json':
                 return jsonify({"error": "Acceso de cajero no autorizado."}), 401
             # Si es una petición de página, redirige al login de cajero
@@ -99,12 +95,10 @@ def log_action_lifo(accion: str):
         session[key] = []
     
     session[key].append(f"{datetime.datetime.now()}: {accion}")
-    # ¡Importante! Debes marcar la sesión como modificada al cambiar listas/dict
     session.modified = True
 
 def pop_action_lifo():
     """Saca la última acción del historial LIFO (usado por el cajero)."""
-    # (Esta función solo la usa el cajero en nuestro diseño)
     key = 'historial_acciones_cajero'
     if key in session and len(session[key]) > 0:
         accion = session[key].pop()
