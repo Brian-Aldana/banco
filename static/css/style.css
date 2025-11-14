@@ -81,7 +81,7 @@ body {
     padding: 12px 16px;
     font-size: 1rem;
     border: 1px solid #ddd;
-    border-radius: 12px; /* Bordes generosos */
+    border-radius: 12px;
     background-color: var(--blanco);
 }
 
@@ -106,7 +106,7 @@ h1, h2, h3 {
     font-weight: 600;
 }
 
-/* --- Estilos para el enlace de registro --- */
+/* --- Estilos para enlace de registro --- */
 .register-link {
     text-align: center;
     margin-top: 1.5rem;
@@ -119,4 +119,96 @@ h1, h2, h3 {
 }
 .register-link a:hover {
     text-decoration: underline;
+}
+
+/* --- Estilos de Dashboard --- */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem; 
+}
+.section-header h2 {
+    margin-bottom: 0; 
+}
+.btn-small {
+    padding: 5px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* --- Estilos de Operaciones --- */
+.operacion-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--lulo-lila);
+    padding-top: 1.5rem;
+}
+.operacion-item .form-control {
+    /* Hacer el input más pequeño */
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    flex-grow: 1; /* Ocupar el espacio restante */
+}
+.btn-verde { background-color: #4CAF50; color: white; }
+.btn-rojo { background-color: #f44336; color: white; }
+
+.btn-cancelar {
+    background-color: #9E9E9E; /* Gris */
+    color: white;
+}
+.btn-pagar {
+    background-color: #03A9F4; /* Azul Claro */
+    color: white;
+}
+.btn-info {
+    background-color: #2196F3; /* Azul */
+    color: white;
+}
+.card-acciones {
+    display: flex;
+    flex-wrap: wrap; /* Para que se ajusten en móviles */
+    gap: 0.5rem;
+    justify-content: flex-start; /* Alinear botones */
+    margin-top: 1rem;
+}
+.exenta-badge {
+    display: inline-block;
+    background-color: var(--lulo-morado);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-left: 10px;
+}
+
+/* Estilos para el modal de transacciones (LIFO) */
+#transaccion-lista {
+    list-style: none;
+    max-height: 400px;
+    overflow-y: auto;
+}
+#transaccion-lista li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--lulo-lila);
+}
+#transaccion-lista li:first-child {
+    font-weight: 600; /* Resaltar la más reciente (LIFO) */
+}
+#transaccion-lista .transaccion-monto {
+    font-weight: 600;
+}
+#transaccion-lista .transaccion-monto.retiro {
+    color: var(--lulo-fucsia);
+}
+#transaccion-lista .transaccion-monto.consignacion {
+    color: #4CAF50;
+}
+#transaccion-lista .transaccion-fecha {
+    font-size: 0.8rem;
+    color: var(--gris-texto);
 }

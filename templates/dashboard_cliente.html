@@ -6,49 +6,41 @@
     <title>Mi Perfil - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--lulo-lila);
-            padding-bottom: 1rem;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--lulo-lila); padding-bottom: 1rem; }
         .header h1 { margin-bottom: 0; }
-        .status-card {
-            margin-top: 2rem;
-            text-align: center;
-            padding: 3rem;
-        }
-        .status-card h2 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-        }
-        .status-card p {
-            font-size: 1.1rem;
-            color: var(--gris-texto);
-            margin-bottom: 2rem;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 99px;
-            font-weight: 600;
-            color: var(--blanco);
-        }
-        .status-badge.afiliado {
-            background-color: #4CAF50; /* Verde */
-        }
-        .status-badge.no-afiliado {
-            background-color: #f44336; /* Rojo */
-        }
-        #btn-afiliarme {
-            font-size: 1.2rem;
-            padding: 15px 30px;
-        }
-        #message {
-            margin-top: 1rem;
-            font-weight: 600;
-        }
+        .layout-dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;}
+        .section-header h2 { margin-bottom: 0; }
+        .btn-small { padding: 5px 15px; font-size: 0.9rem; font-weight: 500; }
+        .producto-card { border: 1px solid var(--lulo-lila); margin-bottom: 1rem; }
+        .producto-card h4 { border-bottom: 1px solid var(--lulo-lila); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .producto-card .saldo { font-size: 1.8rem; font-weight: 600; color: var(--lulo-morado); }
+        .producto-card .numero-cuenta { font-size: 0.9rem; color: var(--gris-texto); }
+        .status-card { text-align: center; padding: 2rem 1.5rem; }
+        .status-card h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .status-card p { font-size: 1rem; color: var(--gris-texto); margin-bottom: 1.5rem; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 99px; font-weight: 600; color: var(--blanco); }
+        .status-badge.afiliado { background-color: #4CAF50; }
+        .status-badge.no-afiliado { background-color: #f44336; }
+        #btn-afiliarme { width: 100%; }
+        #message { margin-top: 1rem; font-weight: 600; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); overflow: auto; }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border-radius: 20px; max-width: 800px; }
+        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        #tabla-amortizacion { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        #tabla-amortizacion th, #tabla-amortizacion td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        #tabla-amortizacion th { background-color: var(--lulo-lila); }
+        #form-modal .modal-content { max-width: 500px; }
+        #form-modal-body .form-group { text-align: left; }
+        #form-modal-body form { display: none; }
+        #modal-error-msg { color: red; margin-top: 1rem; display: none; }
+        #transaccion-lista { list-style: none; max-height: 400px; overflow-y: auto; }
+        #transaccion-lista li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--lulo-lila); }
+        #transaccion-lista li:first-child { font-weight: 600; }
+        #transaccion-lista .transaccion-monto { font-weight: 600; }
+        #transaccion-lista .transaccion-monto.RETIRO { color: var(--lulo-fucsia); }
+        #transaccion-lista .transaccion-monto.CONSIGNACION { color: #4CAF50; }
+        #transaccion-lista .transaccion-fecha { font-size: 0.8rem; color: var(--gris-texto); }
     </style>
 </head>
 <body>
@@ -59,21 +51,135 @@
             <a href="#" id="logout-button" class="btn btn-primary">Cerrar Sesión</a>
         </header>
 
-        <main>
-            <div class="card status-card">
-                <h2>Estado de tu Cuenta</h2>
-                <p>Actualmente eres un cliente:</p>
+        <div class="layout-dashboard">
+            <main>
+                <section id="cuentas-section">
+                    <div class="section-header">
+                        <h2>Cuentas de Ahorros</h2>
+                        <div>
+                            <button class="btn btn-info btn-small" onclick="abrirModal('transferir')">Transferir</button>
+                            <button class="btn btn-secondary btn-small" onclick="abrirModal('cuenta')">+ Crear Nueva</button>
+                        </div>
+                    </div>
+                    <div id="cuentas-container"><p>Cargando...</p></div>
+                </section>
                 
-                <span id="status-display" class="status-badge">Cargando...</span>
-                
-                <div id="afiliacion-section" style="margin-top: 2rem; display: none;">
-                    <p>¡Conviértete en afiliado para obtener beneficios y atención prioritaria!</p>
-                    <button id="btn-afiliarme" class="btn btn-secondary">¡Quiero ser Afiliado Ahora!</button>
+                <section id="creditos-section" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h2>Créditos</h2>
+                        <button class="btn btn-secondary btn-small" onclick="abrirModal('credito')">+ Solicitar Crédito</button>
+                    </div>
+                    <div id="creditos-container"><p>Cargando...</p></div>
+                </section>
+
+                <section id="tarjetas-section" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h2>Tarjetas de Crédito</h2>
+                        <button class="btn btn-secondary btn-small" onclick="abrirModal('tarjeta')">+ Solicitar Tarjeta</button>
+                    </div>
+                    <div id="tarjetas-container"><p>Cargando...</p></div>
+                </section>
+
+                <section id="cdts-section" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h2>CDTs</h2>
+                        <button class="btn btn-secondary btn-small" onclick="abrirModal('cdt')">+ Abrir CDT</button>
+                    </div>
+                    <div id="cdts-container"><p>Cargando...</p></div>
+                </section>
+            </main>
+
+            <aside>
+                <div class="card status-card">
+                    <h2>Estado de tu Cuenta</h2>
+                    <p>Actualmente eres un cliente:</p>
+                    <span id="status-display" class="status-badge">Cargando...</span>
+                    <div id="afiliacion-section" style="margin-top: 2rem; display: none;">
+                        <p>¡Conviértete en afiliado para obtener beneficios!</p>
+                        <button id="btn-afiliarme" class="btn btn-secondary">¡Quiero ser Afiliado!</button>
+                    </div>
+                    <p id="message"></p>
                 </div>
-                
-                <p id="message"></p>
+            </aside>
+        </div>
+    </div>
+
+    <div id="modal-amortizacion" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" id="close-amortizacion-btn">&times;</span>
+            <h2>Tabla de Amortización</h2>
+            <h3 id="cuota-fija-display"></h3>
+            <div style="overflow-x: auto;">
+                <table id="tabla-amortizacion">
+                    <thead><tr><th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo Restante</th></tr></thead>
+                    <tbody id="tabla-amortizacion-body"></tbody>
+                </table>
             </div>
-        </main>
+        </div>
+    </div>
+
+    <div id="form-modal" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" id="close-form-btn">&times;</span>
+            <h2 id="form-modal-title">Solicitar Producto</h2>
+            <div id="form-modal-body">
+                
+                <form id="form-transferir">
+                    <div class="form-group">
+                        <label for="transfer-cuenta-origen">Desde mi cuenta:</label>
+                        <select id="transfer-cuenta-origen" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transfer-cuenta-destino">A mi cuenta:</label>
+                        <select id="transfer-cuenta-destino" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transfer-monto">Monto a Transferir</label>
+                        <input type="number" id="transfer-monto" class="form-control" placeholder="Ej: 100000" required>
+                    </div>
+                </form>
+
+                <form id="form-credito">
+                    <div class="form-group"><label for="credito-monto">Monto a Solicitar</label><input type="number" id="credito-monto" class="form-control" placeholder="Ej: 5000000" required></div>
+                    <div class="form-group"><label for="credito-plazo">Plazo (en meses)</label><input type="number" id="credito-plazo" class="form-control" placeholder="Ej: 24" required></div>
+                    <div class="form-group"><label for="credito-tipo">Tipo de Crédito</label><select id="credito-tipo" class="form-control"><option value="LIBRE_INVERSION">Libre Inversión</option><option value="CARTERA">Cartera</option></select></div>
+                </form>
+                
+                <form id="form-tarjeta">
+                    <div class="form-group"><label for="tarjeta-cupo">Cupo Solicitado</label><input type="number" id="tarjeta-cupo" class="form-control" placeholder="Ej: 2000000" required></div>
+                </form>
+
+                <form id="form-cdt">
+                    <div class="form-group"><label for="cdt-cuenta-origen">Sacar dinero de la cuenta:</label><select id="cdt-cuenta-origen" class="form-control"></select></div>
+                    <div class="form-group"><label for="cdt-monto">Monto a Invertir</label><input type="number" id="cdt-monto" class="form-control" placeholder="Ej: 1000000" required></div>
+                    <div class="form-group"><label for="cdt-plazo">Plazo (en días)</label><input type="number" id="cdt-plazo" class="form-control" placeholder="Ej: 180" required></div>
+                </form>
+
+                <form id="form-avance">
+                    <p id="avance-info" style="font-size: 0.9rem; margin-bottom: 1rem;"></p>
+                    <div class="form-group"><label for="avance-cuenta-destino">Consignar en mi cuenta:</label><select id="avance-cuenta-destino" class="form-control"></select></div>
+                    <div class="form-group"><label for="avance-monto">Monto del Avance</label><input type="number" id="avance-monto" class="form-control" placeholder="Ej: 200000" required></div>
+                </form>
+
+                <form id="form-pagar-tarjeta">
+                    <p id="pagar-tarjeta-info" style="font-size: 0.9rem; margin-bottom: 1rem;"></p>
+                    <div class="form-group"><label for="pagar-tarjeta-cuenta-origen">Pagar con mi cuenta:</label><select id="pagar-tarjeta-cuenta-origen" class="form-control"></select></div>
+                    <div class="form-group"><label for="pagar-tarjeta-monto">Monto a Pagar</loabel><input type="number" id="pagar-tarjeta-monto" class="form-control" placeholder="Ej: 150000" required></div>
+                </form>
+
+                <p id="modal-error-msg"></p>
+                <button id="modal-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-transacciones" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" id="close-transacciones-btn">&times;</span>
+            <h2 id="transacciones-title">Últimos Movimientos</h2>
+            <ul id="transaccion-lista">
+                </ul>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/dashboard_cliente.js') }}"></script>
