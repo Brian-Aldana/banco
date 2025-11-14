@@ -291,7 +291,6 @@ def abrir_cdt():
 @app.route('/cliente/consignar', methods=['POST'])
 @login_required
 def cliente_consignar():
-    # (Esta ruta ya existía)
     cliente_id = session['cliente_id']
     data = request.json
     id_cuenta = data.get('id_cuenta'); monto = data.get('monto')
@@ -373,7 +372,6 @@ def eliminar_cuenta():
 @app.route('/cliente/pagar_con_tarjeta', methods=['POST'])
 @login_required
 def pagar_con_tarjeta():
-    # (Esta ruta ya existía)
     cliente_id = session['cliente_id']
     data = request.json
     id_tarjeta = data.get('id_tarjeta'); monto = data.get('monto')
@@ -394,7 +392,6 @@ def pagar_con_tarjeta():
 @app.route('/cliente/pagar_credito', methods=['POST'])
 @login_required
 def pagar_credito():
-    # (Esta ruta ya existía)
     cliente = db.session.get(Cliente, session['cliente_id'])
     data = request.json
     id_credito = data.get('id_credito'); monto = data.get('monto')
@@ -430,7 +427,7 @@ def pagar_credito():
     log_action_lifo(f"Cliente abonó ${monto} al crédito {credito.id}")
     return jsonify({"success": True, "mensaje": f"Abono de ${monto} realizado (Costo 4x1000: ${impuesto}). Nuevo saldo: ${credito.saldo_pendiente}"})
 
-# --- ¡NUEVAS APIS DE CLIENTE! ---
+# --- ¡APIS DE CLIENTE! ---
 @app.route('/cliente/marcar_exenta', methods=['POST'])
 @login_required
 def marcar_exenta():
