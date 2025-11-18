@@ -2,122 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Turnos - Banco Ucundinamarca</title>
+    <title>Turnos - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .layout-dividido {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
-        }
-        .pantalla-turnos {
-            background: var(--lulo-morado);
-            color: var(--blanco);
-            padding: 2rem;
-            border-radius: 20px;
-        }
-        .turno-actual {
-            text-align: center;
-            border-bottom: 2px solid var(--lulo-fucsia);
-            padding-bottom: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .turno-actual h2 { color: var(--blanco); font-size: 1.5rem; }
-        .turno-actual .numero-turno { font-size: 4rem; font-weight: 700; color: var(--lulo-fucsia); }
-        .filas-espera h3 { color: #fff; margin-bottom: 0.5rem; }
-        .lista-turnos { list-style: none; padding-left: 1rem; color: #eee; }
-
-        /* --- NUEVO: Modal de Login de Afiliado --- */
-        #afiliado-login-form {
-            display: none; /* Oculto por defecto */
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: var(--lulo-lila);
-            border-radius: 12px;
-        }
-        #afiliado-login-form p {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--lulo-morado);
-        }
-        #afiliado-login-form .form-group {
-            margin-bottom: 0.5rem;
-        }
-        #afiliado-login-form label {
-            font-size: 0.8rem;
-            margin-bottom: 0.2rem;
-        }
-        #afiliado-login-error {
-            color: red;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Sistema de Filas (FIFO Ponderado)</h1>
+        <div class="section-header">
+            <h1>Sistema de Turnos</h1>
+            <a href="{{ url_for('index_page') }}" class="btn btn-secondary btn-small">Volver</a>
+        </div>
         
-        <div class="layout-dividido">
-            <div class="card">
-                <h2>Tomar Turno</h2>
-                <form id="form-tomar-turno">
-                    <div class="form-group">
-                        <label for="nombre">Tu Nombre (para el llamado)</label>
-                        <input type="text" id="nombre" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="checkbox" id="es_preferencial">
-                        <label for="es_preferencial">Soy Preferencial (Discapacidad o >60)</label>
-                    </div>
-                    <hr style="margin: 1.5rem 0;">
-                    
-                    <div class="form-group">
-                        <input type="checkbox" id="es_afiliado">
-                        <label for="es_afiliado">Soy Afiliado (Requiere validación)</label>
-                    </div>
-                    
-                    <div id="afiliado-login-form">
-                        <p>Valida tu estado de afiliado:</p>
+        <div class="layout-dashboard">
+            <main>
+                <div class="card">
+                    <h2>Tomar Turno</h2>
+                    <form id="form-tomar-turno">
                         <div class="form-group">
-                            <label for="afiliado_email">Email</label>
-                            <input type="email" id="afiliado_email" class="form-control">
+                            <label>Tu Nombre</label>
+                            <input type="text" id="nombre" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label for="afiliado_pass">Contraseña</label>
-                            <input type="password" id="afiliado_pass" class="form-control">
+                            <input type="checkbox" id="es_preferencial"> 
+                            <label style="display:inline;">Soy Preferencial (Discapacidad o >60)</label>
                         </div>
-                        <div id="afiliado-login-error"></div>
-                    </div>
+                        <div class="form-group">
+                            <input type="checkbox" id="es_afiliado"> 
+                            <label style="display:inline;">Soy Afiliado (Validación)</label>
+                        </div>
+                        
+                        <div id="afiliado-login-form" style="display:none; background:#f3e5f5; padding:15px; border-radius:10px; margin-top:10px;">
+                            <h4 style="margin-top:0;">Validar Afiliado</h4>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="afiliado_email" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Contraseña</label>
+                                <input type="password" id="afiliado_pass" class="form-control">
+                            </div>
+                            <div id="afiliado-login-error" style="color:red; display:none;"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn" style="width:100%; margin-top:15px;">Pedir Turno</button>
+                    </form>
                     
-                    <button type="submit" class="btn btn-secondary" style="margin-top: 1rem;">Pedir Turno</button>
-                </form>
-
-                <div id="mi-turno" class="card" style="margin-top: 1rem; display: none; background: var(--lulo-lila);">
-                    <h3>Tu turno:</h3>
-                    <strong id="numero-mi-turno" style="color:var(--lulo-fucsia); font-size: 1.5rem;"></strong>
+                    <div id="mi-turno" style="margin-top:20px; display:none; text-align:center; background:#e8d7f7; padding:20px; border-radius:12px;">
+                        <h3>Tu turno:</h3>
+                        <strong id="numero-mi-turno" style="color:#6d25a8; font-size: 2.5rem;"></strong>
+                    </div>
                 </div>
-            </div>
-
-            <div class="pantalla-turnos">
-                <div class="turno-actual">
-                    <h2>Turno Actual en Caja</h2>
-                    <div id="turno-actual-display" class="numero-turno">---</div>
+            </main>
+            
+            <aside>
+                <div class="card" style="text-align:center;">
+                    <h3>En Caja</h3>
+                    <div id="turno-actual-display" style="font-size:4rem; font-weight:800; color:#6d25a8;">---</div>
                 </div>
-                <div class="filas-espera">
-                    <h3>En Fila (Preferencial):</h3>
-                    <ul id="lista-preferencial" class="lista-turnos"><li>---</li></ul>
-                    <h3>En Fila (Afiliados):</h3>
-                    <ul id="lista-afiliado" class="lista-turnos"><li>---</li></ul>
-                    <h3>En Fila (No Afiliados):</h3>
-                    <ul id="lista-no_afiliado" class="lista-turnos"><li>---</li></ul>
+                <div class="card">
+                    <h4>Filas de Espera</h4>
+                    <ul id="lista-preferencial" style="padding-left: 20px;">Pref: 0</ul>
+                    <ul id="lista-afiliado" style="padding-left: 20px;">Afil: 0</ul>
+                    <ul id="lista-no_afiliado" style="padding-left: 20px;">No Afil: 0</ul>
                 </div>
-            </div>
+            </aside>
         </div>
     </div>
-    
     <script src="{{ url_for('static', filename='js/filas.js') }}"></script>
 </body>
 </html>

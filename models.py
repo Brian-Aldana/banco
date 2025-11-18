@@ -1,4 +1,3 @@
-# models.py
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Float, Boolean, Date, Enum as SQLAlchemyEnum, ForeignKey, DateTime
@@ -6,13 +5,11 @@ from typing import List
 import enum
 import datetime
 
-# Configuración base para SQLAlchemy
 class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
 
-# --- Enums (Igual que antes) ---
 class TipoCliente(str, enum.Enum):
     NO_AFILIADO = "No Afiliado"
     AFILIADO = "Afiliado"
@@ -26,15 +23,12 @@ class TipoTransaccion(str, enum.Enum):
     CONSIGNACION = "Consignación"
     PAGO = "Pago"
 
-# --- Modelo de Cajero ---
 class Cajero(db.Model):
     __tablename__ = 'cajero'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(256))
     nombre: Mapped[str] = mapped_column(String(100))
-
-# --- Modelo de Cliente ---
 
 class Cliente(db.Model):
     __tablename__ = 'cliente'
@@ -44,17 +38,12 @@ class Cliente(db.Model):
     password_hash: Mapped[str] = mapped_column(String(256))
     fecha_nacimiento: Mapped[datetime.date] = mapped_column(Date)
     tiene_discapacidad: Mapped[bool] = mapped_column(Boolean, default=False)
-    
-    # El default es NO_AFILIADO
     tipo_cliente: Mapped[TipoCliente] = mapped_column(SQLAlchemyEnum(TipoCliente), default=TipoCliente.NO_AFILIADO)
 
-    # Relaciones (POO)
     cuentas_ahorros: Mapped[List["CuentaAhorros"]] = relationship(back_populates="cliente")
     tarjetas_credito: Mapped[List["TarjetaCredito"]] = relationship(back_populates="cliente")
     creditos: Mapped[List["Credito"]] = relationship(back_populates="cliente")
     cdts: Mapped[List["CDT"]] = relationship(back_populates="cliente")
-
-# --- Resto de modelos (Sin cambios) ---
 
 class CuentaAhorros(db.Model):
     __tablename__ = 'cuentaahorros'

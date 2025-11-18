@@ -1,143 +1,58 @@
-// static/js/filas.js
 document.addEventListener('DOMContentLoaded', () => {
-
-    const formTomarTurno = document.getElementById('form-tomar-turno');
-    const miTurnoDisplay = document.getElementById('mi-turno');
-    const numeroMiTurno = document.getElementById('numero-mi-turno');
+    const form = document.getElementById('form-tomar-turno');
+    const checkAfil = document.getElementById('es_afiliado');
+    const divLogin = document.getElementById('afiliado-login-form');
     
-    // --- Selectores del nuevo Login Modal ---
-    const checkAfiliado = document.getElementById('es_afiliado');
-    const afiliadoLoginForm = document.getElementById('afiliado-login-form');
-    const afiliadoLoginError = document.getElementById('afiliado-login-error');
-
-    // --- 1. Lógica para mostrar/ocultar el login modal ---
-    checkAfiliado.addEventListener('change', () => {
-        if (checkAfiliado.checked) {
-            afiliadoLoginForm.style.display = 'block';
-        } else {
-            afiliadoLoginForm.style.display = 'none';
-            afiliadoLoginError.style.display = 'none'; // Ocultar errores
-        }
+    checkAfil.addEventListener('change', () => {
+        divLogin.style.display = checkAfil.checked ? 'block' : 'none';
     });
 
-    // --- 2. Lógica para TOMAR TURNO (Actualizada) ---
-    formTomarTurno.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // Datos básicos del turno
-        let nombre = document.getElementById('nombre').value;
-        const es_preferencial = document.getElementById('es_preferencial').checked;
-        let es_afiliado = checkAfiliado.checked;
         let id_cliente = null;
-        
-        afiliadoLoginError.style.display = 'none'; // Ocultar error
+        let nombre = document.getElementById('nombre').value;
 
-        // --- VALIDACIÓN DE AFILIADO ---
-        if (es_afiliado) {
+        if (checkAfil.checked) {
             const email = document.getElementById('afiliado_email').value;
-            const password = document.getElementById('afiliado_pass').value;
-
-            if (!email || !password) {
-                afiliadoLoginError.textContent = 'Email y contraseña son requeridos.';
-                afiliadoLoginError.style.display = 'block';
-                return; // Detener envío
-            }
+            const pass = document.getElementById('afiliado_pass').value;
+            
+            if (!email || !pass) return alert("Ingrese credenciales");
 
             try {
-                // Llamar a la nueva API de validación
-                const validationResponse = await fetch('/filas/validar_afiliado', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
-                });
-
-                const validationData = await validationResponse.json();
-
-                if (!validationResponse.ok || !validationData.validado) {
-                    afiliadoLoginError.textContent = validationData.error || 'Credenciales inválidas o no eres afiliado.';
-                    afiliadoLoginError.style.display = 'block';
-                    return; // Detener envío
-                }
-                
-                // ¡Validación exitosa!
-                // Usamos los datos del cliente validado
-                id_cliente = validationData.id_cliente;
-                nombre = validationData.nombre; // Sobrescribir el nombre con el real
-
-            } catch (error) {
-                afiliadoLoginError.textContent = 'Error de red al validar.';
-                afiliadoLoginError.style.display = 'block';
-                return;
-            }
-        }
-        // --- FIN VALIDACIÓN ---
-
-        // Si se pasa la validación (o no era necesaria), pedir el turno
-        try {
-            const response = await fetch('/filas/tomar_turno', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    nombre: nombre, 
-                    es_afiliado: es_afiliado, // Será 'true' solo si pasó la validación
-                    es_preferencial: es_preferencial,
-                    id_cliente: id_cliente // Será el ID del cliente validado
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                numeroMiTurno.textContent = data.turno.numero_turno;
-                miTurnoDisplay.style.display = 'block';
-                formTomarTurno.reset();
-                afiliadoLoginForm.style.display = 'none'; // Ocultar modal de login
-            } else {
-                alert("Error al tomar el turno. Intenta de nuevo.");
-            }
-        } catch (error) {
-            alert("Error de red al tomar el turno.");
-        }
-    });
-
-    // 3. Lógica para ACTUALIZAR PANTALLA
-    const turnoActualDisplay = document.getElementById('turno-actual-display');
-    const listaPreferencial = document.getElementById('lista-preferencial');
-    const listaAfiliado = document.getElementById('lista-afiliado');
-    const listaNoAfiliado = document.getElementById('lista-no_afiliado');
-
-    async function actualizarPantallaTurnos() {
-        try {
-            const response = await fetch('/filas/estado_actual');
-            const data = await response.json();
-
-            if (data.turno_en_caja) {
-                turnoActualDisplay.textContent = data.turno_en_caja.numero_turno;
-            } else {
-                turnoActualDisplay.textContent = '---';
-            }
-
-            const actualizarLista = (element, lista) => {
-                element.innerHTML = '';
-                if (lista.length === 0) {
-                    element.innerHTML = '<li>---</li>';
+                const resVal = await fetch('/filas/validar_afiliado', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass})});
+                const dVal = await resVal.json();
+                if (!dVal.validado) {
+                    document.getElementById('afiliado-login-error').textContent = dVal.error;
+                    document.getElementById('afiliado-login-error').style.display = 'block';
                     return;
                 }
-                lista.forEach(turno => {
-                    const li = document.createElement('li');
-                    li.textContent = turno;
-                    element.appendChild(li);
-                });
-            };
-
-            actualizarLista(listaPreferencial, data.fila_preferencial);
-            actualizarLista(listaAfiliado, data.fila_afiliado);
-            actualizarLista(listaNoAfiliado, data.fila_no_afiliado);
-
-        } catch (error) {
-            console.error("Error actualizando la pantalla de turnos:", error);
+                id_cliente = dVal.id_cliente;
+                nombre = dVal.nombre;
+            } catch(e) { alert("Error validando"); return; }
         }
-    }
 
-    setInterval(actualizarPantallaTurnos, 3000);
-    actualizarPantallaTurnos();
+        try {
+            const res = await fetch('/filas/tomar_turno', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+                nombre, es_afiliado: checkAfil.checked, es_preferencial: document.getElementById('es_preferencial').checked, id_cliente
+            })});
+            if (res.ok) {
+                const d = await res.json();
+                document.getElementById('numero-mi-turno').textContent = d.turno.numero_turno;
+                document.getElementById('mi-turno').style.display = 'block';
+                form.reset(); divLogin.style.display = 'none';
+            }
+        } catch(e) {}
+    });
+
+    async function update() {
+        try {
+            const d = await (await fetch('/filas/estado_actual')).json();
+            if(d.turno_en_caja) document.getElementById('turno-actual-display').textContent = d.turno_en_caja.numero_turno;
+            const lista = (ul, data) => { ul.innerHTML = ''; data.forEach(t => ul.innerHTML += `<li>${t}</li>`); };
+            lista(document.getElementById('lista-preferencial'), d.fila_preferencial);
+            lista(document.getElementById('lista-afiliado'), d.fila_afiliado);
+            lista(document.getElementById('lista-no_afiliado'), d.fila_no_afiliado);
+        } catch(e){}
+    }
+    setInterval(update, 3000); update();
 });

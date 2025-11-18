@@ -3,182 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Cajero - Banco Ucundinamarca</title>
+    <title>Panel Cajero - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        :root {
-            --gris-borde: #eee;
-            --verde-op: #e8f5e9;
-            --rojo-op: #ffebee;
-        }
-        .container { max-width: 1400px; }
-        .layout-cajero {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2rem;
-            min-height: 90vh;
-        }
-        .col-turnos, .col-cliente {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .col-turnos { border-right: 2px solid var(--gris-borde); padding-right: 2rem; }
-        .turno-card { background: var(--lulo-morado); color: white; }
-        .turno-card h2 { color: white; }
-        .turno-card .numero-turno {
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--lulo-fucsia);
-            text-align: center;
-            margin: 1rem 0;
-        }
-        .lista-turnos-espera li {
-            font-size: 0.9rem;
-            padding: 4px 0;
-        }
-        #btn-llamar-siguiente { width: 100%; }
-        
-        /* Columna Cliente */
-        #cliente-info { display: none; } /* Oculto hasta que se carga un cliente */
-        #cliente-perfil {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        #cliente-perfil h2 { margin-bottom: 0.5rem; }
-        .layout-productos {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-        .producto-card { border: 1px solid var(--gris-borde); }
-        .producto-card h4 {
-            border-bottom: 1px solid var(--gris-borde);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .operacion-item {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .operacion-item .form-control { flex-grow: 1; }
-        .btn-verde { background-color: #4CAF50; color: white; }
-        .btn-rojo { background-color: #f44336; color: white; }
-        .btn-cancelar { background-color: #757575; color: white; }
-
-        /* Modal (igual que antes) */
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border-radius: 20px; max-width: 800px; }
-        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        #tabla-amortizacion { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        #tabla-amortizacion th, #tabla-amortizacion td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-        #tabla-amortizacion th { background-color: var(--lulo-lila); }
-    </style>
 </head>
 <body>
-
     <div class="container">
-        <header class="header" style="padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 2px solid var(--gris-borde);">
-            <h1>Panel de Cajero - Banco Ucundinamarca</h1>
-            <a href="#" id="logout-button" class="btn btn-secondary">Cerrar Sesión (Cajero)</a>
-        </header>
+        <div class="section-header">
+            <h1>Panel de Cajero</h1>
+            <button id="logout-button" class="btn btn-rojo">Cerrar Sesión</button>
+        </div>
 
         <div class="layout-cajero">
-            
-            <aside class="col-turnos">
-                
-                <div class="card turno-card">
-                    <h2>Turno Actual</h2>
-                    <div id="turno-actual-display" class="numero-turno">---</div>
-                    <h3 id="turno-actual-nombre" style="color: white; text-align: center; font-weight: 400;">(En espera...)</h3>
-                    <button id="btn-llamar-siguiente" class="btn btn-primary">Llamar Siguiente (20/60/20)</button>
-                </div>
-                
+            <aside>
                 <div class="card">
-                    <h4>Filas en Espera</h4>
-                    <ul id="lista-preferencial" class="lista-turnos-espera"><strong>Preferencial (20%):</strong> <li>---</li></ul>
-                    <ul id="lista-afiliado" class="lista-turnos-espera"><strong>Afiliado (60%):</strong> <li>---</li></ul>
-                    <ul id="lista-no_afiliado" class="lista-turnos-espera"><strong>No Afiliado (20%):</strong> <li>---</li></ul>
+                    <div class="card-icon" style="margin: 0 auto 10px auto;">📢</div>
+                    <h3 style="text-align:center;">Turno Actual</h3>
+                    <div id="turno-actual-display" style="font-size: 3rem; text-align: center; color: #6a1b9a; font-weight: bold;">---</div>
+                    <div id="turno-actual-nombre" style="text-align: center; margin-bottom: 20px; color: #555;">(Esperando...)</div>
+                    <button id="btn-llamar-siguiente" class="btn btn-cajero" style="width: 100%;">Llamar Siguiente</button>
                 </div>
-                
-                <div class="card">
-                    <h4>Historial de Cajero (LIFO)</h4>
-                    <ul id="historial-lifo" style="font-size: 0.8rem; padding-left: 1.5rem; max-height: 300px; overflow-y: auto;">
-                        <li>Cargando...</li>
-                    </ul>
+                <div class="card" style="margin-top: 20px;">
+                    <h4>En Espera</h4>
+                    <ul id="lista-preferencial" style="padding-left: 20px;">Pref: 0</ul>
+                    <ul id="lista-afiliado" style="padding-left: 20px;">Afil: 0</ul>
+                    <ul id="lista-no_afiliado" style="padding-left: 20px;">No Afil: 0</ul>
+                </div>
+                <div class="card" style="margin-top: 20px;">
+                    <h4>Historial (LIFO)</h4>
+                    <ul id="historial-lifo" style="font-size: 0.8rem; padding-left: 15px; max-height: 200px; overflow-y: auto;"></ul>
                 </div>
             </aside>
-
-            <main class="col-cliente">
-                
+            <main>
                 <div class="card">
-                    <form id="form-buscar-cliente" style="display: flex; gap: 1rem;">
-                        <input type="text" id="search_term" class="form-control" placeholder="Buscar por Cédula (ID) o Email..." required>
+                    <form id="form-buscar-cliente" style="display: flex; gap: 10px;">
+                        <input type="text" id="search_term" class="form-control" placeholder="Cédula o Email del cliente...">
                         <button type="submit" class="btn btn-secondary">Buscar</button>
                     </form>
                 </div>
-                
-                <div id="cliente-info" class="card">
-                    
-                    <div id="cliente-perfil">
-                        <div>
-                            <h2 id="cliente-nombre"></h2>
-                            <p id="cliente-email" style="color: var(--gris-texto);"></p>
-                            <span id="cliente-tipo" class="btn" style="padding: 2px 8px; font-size: 0.8rem;"></span>
-                        </div>
-                        <button id="btn-afiliar-cliente" class="btn btn-primary">Afiliar Cliente</button>
-                    </div>
-                    
-                    <hr style="margin: 1.5rem 0; border-color: var(--gris-borde);">
-                    
-                    <div class="layout-productos">
-                        
-                        <div id="cuentas-container">
-                            <h3>Cuentas de Ahorro</h3>
+                <div id="cliente-info" style="display: none;">
+                    <div class="card" style="margin-top: 20px; border-top: 5px solid #d81b60;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2 id="cliente-nombre" style="margin: 0;">Nombre Cliente</h2>
+                                <p id="cliente-email" style="margin: 5px 0;">email@cliente.com</p>
+                                <span id="cliente-tipo" style="background: #e0d7f5; padding: 3px 8px; border-radius: 4px; font-size: 0.9rem;">Afiliado</span>
                             </div>
-                        
-                        <div id="creditos-container">
-                            <h3>Créditos y CDTs</h3>
+                            <button id="btn-limpiar-cliente" class="btn btn-cancelar">Limpiar</button>
+                        </div>
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                        <div id="opciones-no-afiliado" style="display:none;">
+                            <h3>Opciones de Visitante</h3>
+                            <div style="display:flex; gap:10px;">
+                                <button id="btn-anon-consignar" class="btn btn-verde">Consignar a Tercero</button>
+                                <button id="btn-anon-registrar" class="btn btn-info">Registrar Cliente</button>
                             </div>
+                        </div>
+                        <div id="panel-productos">
+                            <div id="area-afiliar" style="display:none; text-align:center; margin: 20px 0;">
+                                <button id="btn-afiliar-cliente" class="btn btn-verde">Afiliar Cliente Ahora</button>
+                            </div>
+                            <div class="section-header" style="margin-top: 20px;"><h3>Cuentas de Ahorro</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('cuenta')">+ Crear</button></div>
+                            <div id="cuentas-container"></div>
+                            <div class="section-header" style="margin-top: 20px;"><h3>Créditos</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('credito')">+ Nuevo</button></div>
+                            <div id="creditos-container"></div>
+                            <div class="section-header" style="margin-top: 20px;"><h3>Tarjetas</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('tarjeta')">+ Asignar</button></div>
+                            <div id="tarjetas-container"></div>
+                            <div class="section-header" style="margin-top: 20px;"><h3>CDTs</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('cdt')">+ Abrir</button></div>
+                            <div id="cdts-container"></div>
+                        </div>
                     </div>
-                </div>
-
-                <div id="card-registrar" class="card" style="display: none; background: var(--lulo-lila);">
-                    <h3>Afiliar Nuevo Cliente</h3>
-                    <form id="form-afiliar-cliente">
-                        <div class="form-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="reg-nombre" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="reg-email" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha de Nacimiento</label>
-                            <input type="date" id="reg-fecha" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Guardar Afiliado</button>
-                    </form>
                 </div>
             </main>
         </div>
     </div>
-
-    <div id="modal-amortizacion" class="modal">
-        <div class="modal-content card">
-            <span class="close-modal" id="close-modal-btn">&times;</span>
-            <h2>Tabla de Amortización</h2>
-            <h3 id="cuota-fija-display"></h3>
-            <table id="tabla-amortizacion">
-                <thead> <tr><th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo Restante</th></tr> </thead>
-                <tbody id="tabla-amortizacion-body"></tbody>
-            </table>
+    
+    <div id="cajero-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">Operación</h2>
+            <div id="modal-body">
+                <form id="form-crear-credito" style="display:none;"><div class="form-group"><label>Monto:</label><input type="number" id="crear-credito-monto" class="form-control"></div><div class="form-group"><label>Plazo:</label><input type="number" id="crear-credito-plazo" class="form-control"></div><div class="form-group"><label>Tipo:</label><select id="crear-credito-tipo" class="form-control"><option value="LIBRE_INVERSION">Libre Inversión</option><option value="CARTERA">Cartera</option></select></div><button type="submit" class="btn" style="width:100%">Crear</button></form>
+                <form id="form-crear-tarjeta" style="display:none;"><div class="form-group"><label>Cupo Inicial:</label><input type="number" id="crear-tarjeta-cupo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Asignar</button></form>
+                <form id="form-crear-cdt" style="display:none;"><div class="form-group"><label>Cuenta Origen:</label><select id="crear-cdt-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="crear-cdt-monto" class="form-control"></div><div class="form-group"><label>Plazo:</label><input type="number" id="crear-cdt-plazo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Abrir CDT</button></form>
+                <form id="form-transferir-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="trans-origen" class="form-control"></select></div><div class="form-group"><label>Destino:</label><select id="trans-destino" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="trans-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Transferir</button></form>
+                <form id="form-pagar-credito-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="pagar-credito-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="pagar-credito-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Pagar</button></form>
+                <form id="form-pagar-tarjeta-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="pagar-tarjeta-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="pagar-tarjeta-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Pagar</button></form>
+                <form id="form-avance-cajero" style="display:none;"><div class="form-group"><label>Destino:</label><select id="avance-destino" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="avance-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Avance</button></form>
+            </div>
         </div>
     </div>
-
     <script src="{{ url_for('static', filename='js/cajero.js') }}"></script>
 </body>
 </html>

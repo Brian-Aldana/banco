@@ -1,382 +1,167 @@
-// static/js/cajero.js
 document.addEventListener('DOMContentLoaded', () => {
-
-    // --- Selectores de Turnos (Columna 1) ---
-    const btnLlamarSiguiente = document.getElementById('btn-llamar-siguiente');
-    const turnoActualDisplay = document.getElementById('turno-actual-display');
-    const turnoActualNombre = document.getElementById('turno-actual-nombre');
-    const listaPreferencial = document.getElementById('lista-preferencial');
-    const listaAfiliado = document.getElementById('lista-afiliado');
-    const listaNoAfiliado = document.getElementById('lista-no_afiliado');
-    const historialLifo = document.getElementById('historial-lifo');
-    const logoutButton = document.getElementById('logout-button'); // <-- Selector del botón de logout
-
-    // --- Selectores de Cliente (Columna 2) ---
-    const formBuscarCliente = document.getElementById('form-buscar-cliente');
-    const searchTermInput = document.getElementById('search_term');
-    const clienteInfo = document.getElementById('cliente-info');
-    const clienteNombre = document.getElementById('cliente-nombre');
-    const clienteEmail = document.getElementById('cliente-email');
-    const clienteTipo = document.getElementById('cliente-tipo');
-    const cuentasContainer = document.getElementById('cuentas-container');
-    const creditosContainer = document.getElementById('creditos-container');
+    const btnLlamar = document.getElementById('btn-llamar-siguiente');
+    const turnoDisplay = document.getElementById('turno-actual-display');
+    const turnoNombre = document.getElementById('turno-actual-nombre');
+    const clientePanel = document.getElementById('cliente-info');
+    const modal = document.getElementById('cajero-modal');
+    const modalTitle = document.getElementById('modal-title');
     
-    // --- Selectores de Registro (Columna 2) ---
-    const btnAfiliarCliente = document.getElementById('btn-afiliar-cliente');
-    const cardRegistrar = document.getElementById('card-registrar');
-    const formAfiliarCliente = document.getElementById('form-afiliar-cliente');
+    let CLIENTE_ID = null;
+    let CUENTAS_CACHE = []; // Necesario para poblar selects de transferencia/pago
 
-    // --- Selectores de Modal (Amortización) ---
-    const modal = document.getElementById('modal-amortizacion');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-    const cuotaFijaDisplay = document.getElementById('cuota-fija-display');
-    const tablaAmortizacionBody = document.getElementById('tabla-amortizacion-body');
-
-    let CLIENTE_ACTUAL_ID = null;
-
-    // ===============================================
-    // LÓGICA DE TURNOS (FIFO PONDERADO)
-    // ===============================================
-
-    btnLlamarSiguiente.addEventListener('click', async () => {
+    // Llamar Turno y Auto-Cargar
+    btnLlamar.onclick = async () => {
         try {
-            const response = await fetch('/filas/llamar_siguiente');
-            const data = await response.json();
-
-            if (response.ok) {
+            const res = await fetch('/filas/llamar_siguiente');
+            const data = await res.json();
+            if(res.ok) {
                 const turno = data.turno_llamado;
-                turnoActualDisplay.textContent = turno.numero_turno;
-                turnoActualNombre.textContent = turno.nombre;
-                
-                if (turno.id_cliente) {
-                    cargarCliente(turno.id_cliente);
-                    searchTermInput.value = turno.id_cliente;
-                } else if (turno.tipo === 'no_afiliado') {
-                    limpiarCliente();
-                    cardRegistrar.style.display = 'block';
-                    document.getElementById('reg-nombre').value = turno.nombre;
-                } else {
-                    limpiarCliente();
-                }
+                turnoDisplay.textContent = turno.numero_turno;
+                turnoNombre.textContent = turno.nombre;
+                if(turno.id_cliente) cargarClienteId(turno.id_cliente);
+                else { limpiarCliente(); mostrarOpcionesNoAfiliado(turno.nombre); }
+            } else alert(data.mensaje);
+            actualizarFilas();
+        } catch(e) {}
+    };
 
-            } else {
-                // Si la sesión expiró (401) o no hay nadie (404)
-                if (response.status === 401) {
-                    alert("Tu sesión de cajero expiró. Serás redirigido al login.");
-                    window.location.href = '/cajero/login';
-                } else {
-                    turnoActualDisplay.textContent = '---';
-                    turnoActualNombre.textContent = '(No hay nadie)';
-                    alert(data.mensaje);
-                }
-            }
-            
-            actualizarPantallaTurnos();
-            cargarHistorialLifo();
-
-        } catch (error) {
-            console.error("Error llamando turno:", error);
-        }
-    });
-
-    async function actualizarPantallaTurnos() {
-        
-        try {
-            const response = await fetch('/filas/estado_actual');
-            const data = await response.json();
-
-            if (data.turno_en_caja && turnoActualDisplay.textContent === '---') {
-                turnoActualDisplay.textContent = data.turno_en_caja.numero_turno;
-                turnoActualNombre.textContent = data.turno_en_caja.nombre;
-            }
-
-            const actualizarLista = (element, lista, nombre) => {
-                element.innerHTML = `<strong>${nombre}:</strong>`;
-                if (lista.length === 0) {
-                    element.innerHTML += ' <li>---</li>';
-                    return;
-                }
-                lista.forEach(turno => {
-                    const li = document.createElement('li');
-                    li.textContent = turno;
-                    element.appendChild(li);
-                });
-            };
-
-            actualizarLista(listaPreferencial, data.fila_preferencial, 'Preferencial (20%)');
-            actualizarLista(listaAfiliado, data.fila_afiliado, 'Afiliado (60%)');
-            actualizarLista(listaNoAfiliado, data.fila_no_afiliado, 'No Afiliado (20%)');
-
-        } catch (error) {
-            console.error("Error actualizando la pantalla de turnos:", error);
-        }
-    }
-
-    // ===============================================
-    // LÓGICA DEL CAJERO (POO y Operaciones)
-    // ===============================================
-
-    formBuscarCliente.addEventListener('submit', async (e) => {
+    document.getElementById('form-buscar-cliente').onsubmit = (e) => {
         e.preventDefault();
-        const termino = searchTermInput.value;
-        if (!termino) return;
-        
-        cargarCliente(termino);
-    });
+        cargarClienteTerm(document.getElementById('search_term').value);
+    };
 
-    async function cargarCliente(termino_busqueda) {
-        
-        try {
-            const response = await fetch('/cajero/buscar_cliente', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ search_term: termino_busqueda })
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    alert("Tu sesión de cajero expiró. Serás redirigido al login.");
-                    window.location.href = '/cajero/login';
-                } else {
-                    alert(data.error || "Error buscando cliente");
-                }
-                limpiarCliente();
-                return;
-            }
-
-            const cliente = await response.json();
-            
-            CLIENTE_ACTUAL_ID = cliente.id;
-            clienteInfo.style.display = 'block';
-            cardRegistrar.style.display = 'none';
-            
-            clienteNombre.textContent = cliente.nombre_completo;
-            clienteEmail.textContent = cliente.email;
-            clienteTipo.textContent = cliente.tipo_cliente;
-            
-            cuentasContainer.innerHTML = '<h3>Cuentas de Ahorro</h3>';
-            if(cliente.cuentas_ahorros.length === 0) {
-                cuentasContainer.innerHTML += '<p>No tiene cuentas.</p>';
-            }
-            cliente.cuentas_ahorros.forEach(cuenta => {
-                cuentasContainer.innerHTML += `
-                    <div classclass="card producto-card">
-                        <h4>Cuenta N°: ${cuenta.numero_cuenta}</h4>
-                        <p>Saldo: <strong>$${formatCurrency(cuenta.saldo)}</strong></p>
-                        ${cuenta.exenta_4x1000 ? '<span style="color:green; font-size:0.8rem;">Exenta 4x1000</span>' : ''}
-                        
-                        <div class="operacion-item">
-                            <input type="number" id="monto-${cuenta.id}" class="form-control" placeholder="Monto">
-                            <button class="btn btn-verde" onclick="realizarOperacion('consignar', ${cuenta.id})">Consignar</button>
-                            <button class="btn btn-rojo" onclick="realizarOperacion('retirar', ${cuenta.id})">Retirar</button>
-                        </div>
-                        <button class="btn btn-cancelar" onclick="cancelarCuenta(${cuenta.id})" style="margin-top: 10px; width: 100%;">Cancelar Cuenta</button>
-                    </div>
-                `;
-            });
-
-            creditosContainer.innerHTML = '<h3>Créditos y CDTs</h3>';
-            if(cliente.creditos.length === 0 && cliente.cdts.length === 0) {
-                creditosContainer.innerHTML += '<p>No tiene productos.</p>';
-            }
-            cliente.creditos.forEach(credito => {
-                creditosContainer.innerHTML += `
-                    <div class="card producto-card">
-                        <h4>Crédito: ${credito.tipo_credito}</h4>
-                        <p>Saldo Pendiente: <strong>$${formatCurrency(credito.saldo_pendiente)}</strong></p>
-                        <p>Aprobado: $${formatCurrency(credito.monto_aprobado)}</p>
-                        <button class="btn btn-secondary" onclick="abrirModalAmortizacion(${credito.id})">Ver Amortización</button>
-                    </div>
-                `;
-            });
-            cliente.cdts.forEach(cdt => {
-                creditosContainer.innerHTML += `
-                    <div class="card producto-card">
-                        <h4>CDT (ID: ${cdt.id})</h4>
-                        <p>Inversión: <strong>$${formatCurrency(cdt.monto_inversion)}</strong></p>
-                        <p>Plazo: ${cdt.plazo_dias} días</p>
-                    </div>
-                `;
-            });
-            
-            cargarHistorialLifo();
-
-        } catch (error) {
-            console.error("Error cargando cliente:", error);
-            alert("Error de red al buscar cliente.");
-        }
+    async function cargarClienteId(id) { return cargarClienteTerm(id); }
+    async function cargarClienteTerm(term) {
+        const res = await fetch('/cajero/buscar_cliente', { method:'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({search_term: term})});
+        const data = await res.json();
+        if(res.ok) renderCliente(data); else { alert(data.error); limpiarCliente(); }
     }
 
-    function limpiarCliente() {
+    function renderCliente(data) {
+        CLIENTE_ID = data.id;
+        CUENTAS_CACHE = data.cuentas_ahorros;
+        document.getElementById('cliente-nombre').textContent = data.nombre_completo;
+        document.getElementById('cliente-email').textContent = data.email;
+        document.getElementById('cliente-tipo').textContent = data.tipo_cliente;
         
-        CLIENTE_ACTUAL_ID = null;
-        clienteInfo.style.display = 'none';
-        cardRegistrar.style.display = 'none';
-        searchTermInput.value = '';
+        clientePanel.style.display = 'block';
+        document.getElementById('opciones-no-afiliado').style.display = 'none';
+        document.getElementById('panel-productos').style.display = 'block';
+        document.getElementById('area-afiliar').style.display = data.tipo_cliente === 'NO_AFILIADO' ? 'block' : 'none';
+
+        const cc = document.getElementById('cuentas-container'); cc.innerHTML='';
+        data.cuentas_ahorros.forEach(c => {
+            cc.innerHTML += `<div class="card producto-card"><h4>${c.numero_cuenta}</h4><div class="saldo">$${c.saldo.toLocaleString()}</div><div class="operacion-item"><input id="monto-c-${c.id}" class="form-control" placeholder="Monto"><button class="btn btn-verde btn-small" onclick="opCajero('consignar', ${c.id})">Consignar</button><button class="btn btn-rojo btn-small" onclick="opCajero('retirar', ${c.id})">Retirar</button></div><div class="card-acciones"><button class="btn btn-info btn-small" onclick="abrirModalTransferir()">Transferir</button><button class="btn btn-gris btn-small" onclick="cancelarCuenta(${c.id})">Cancelar</button></div></div>`;
+        });
+
+        const cr = document.getElementById('creditos-container'); cr.innerHTML='';
+        data.creditos.forEach(c => {
+            cr.innerHTML += `<div class="card producto-card"><h4>${c.tipo_credito}</h4><p>Deuda: $${c.saldo_pendiente.toLocaleString()}</p><div class="card-acciones"><button class="btn btn-verde btn-small" onclick="abrirModalPagarCredito(${c.id})">Abonar</button></div></div>`;
+        });
+
+        const tj = document.getElementById('tarjetas-container'); tj.innerHTML='';
+        data.tarjetas_credito.forEach(t => {
+            tj.innerHTML += `<div class="card producto-card"><h4>Tarjeta ${t.numero_tarjeta.slice(-4)}</h4><p>Usado: $${t.cupo_usado.toLocaleString()}</p><div class="card-acciones"><button class="btn btn-verde btn-small" onclick="abrirModalPagarTarjeta(${t.id})">Pagar</button><button class="btn btn-info btn-small" onclick="abrirModalAvance(${t.id}, ${t.cupo_total-t.cupo_usado})">Avance</button></div></div>`;
+        });
+        
+        const cd = document.getElementById('cdts-container'); cd.innerHTML='';
+        data.cdts.forEach(c => cd.innerHTML += `<div class="card producto-card"><h4>CDT</h4><p>Inv: $${c.monto_inversion.toLocaleString()}</p></div>`);
     }
 
-    // --- Lógica de Operaciones (Consignar / Retirar) ---
-    window.realizarOperacion = async (tipo, id_cuenta) => {
-        
-        const monto = document.getElementById(`monto-${id_cuenta}`).value;
-        if (!monto || monto <= 0) {
-            alert("Debe ingresar un monto válido.");
-            return;
-        }
-        const url = (tipo === 'consignar') ? '/cajero/realizar_consignacion' : '/cajero/realizar_retiro';
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_cuenta: id_cuenta, monto: parseFloat(monto) })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert(data.mensaje);
-                cargarCliente(data.cliente_id);
-            } else {
-                if(response.status === 401) window.location.href = '/cajero/login';
-                alert(`Error: ${data.error}`);
-            }
-        } catch (error) {
-            alert("Error de red al realizar la operación.");
-        }
-    }
-
-    // --- Lógica de Cancelar Cuenta ---
-    window.cancelarCuenta = async (id_cuenta) => {
-        
-        if (!confirm(`¿Está seguro que desea CANCELAR la cuenta N° ${id_cuenta}? Esta acción no se puede deshacer.`)) {
-            return;
-        }
-        try {
-            const response = await fetch('/cajero/cancelar_cuenta', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_cuenta: id_cuenta })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert(data.mensaje);
-                cargarCliente(data.cliente_id);
-            } else {
-                if(response.status === 401) window.location.href = '/cajero/login';
-                alert(`Error: ${data.error}`);
-            }
-        } catch (error) {
-            alert("Error de red al cancelar la cuenta.");
-        }
-    }
-
-    // --- Lógica de Afiliar Cliente (Registro en ventanilla) ---
-    btnAfiliarCliente.addEventListener('click', () => {
-        
-        limpiarCliente();
-        cardRegistrar.style.display = 'block';
-    });
-    
-    formAfiliarCliente.addEventListener('submit', async (e) => {
-        
-        e.preventDefault();
-        const data = {
-            nombre_completo: document.getElementById('reg-nombre').value,
-            email: document.getElementById('reg-email').value,
-            fecha_nacimiento: document.getElementById('reg-fecha').value
+    function mostrarOpcionesNoAfiliado(nombre) {
+        clientePanel.style.display = 'block';
+        document.getElementById('panel-productos').style.display = 'none';
+        document.getElementById('opciones-no-afiliado').style.display = 'block';
+        document.getElementById('cliente-nombre').textContent = nombre;
+        document.getElementById('cliente-email').textContent = "No Registrado";
+        document.getElementById('btn-anon-consignar').onclick = () => {
+            const n=prompt("Cuenta destino:"); const m=prompt("Monto:");
+            if(n&&m) fetch('/cajero/consignar_tercero', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({numero_cuenta:n, monto:parseFloat(m)})}).then(r=>r.json()).then(d=>alert(d.mensaje||d.error));
         };
-        try {
-            const response = await fetch('/cajero/afiliar_cliente', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.mensaje);
-                cardRegistrar.style.display = 'none';
-                formAfiliarCliente.reset();
-                cargarCliente(result.id_cliente);
-            } else {
-                if(response.status === 401) window.location.href = '/cajero/login';
-                alert(`Error: ${result.error}`);
-            }
-        } catch (error) {
-            alert("Error de red al afiliar cliente.");
+        document.getElementById('btn-anon-registrar').onclick = () => alert("Use formulario de registro");
+    }
+
+    function limpiarCliente() { CLIENTE_ID = null; clientePanel.style.display = 'none'; document.getElementById('search_term').value = ''; }
+    document.getElementById('btn-limpiar-cliente').onclick = limpiarCliente;
+
+    window.opCajero = async (tipo, id) => {
+        const m = document.getElementById(`monto-c-${id}`).value;
+        const url = tipo === 'consignar' ? '/cajero/realizar_consignacion' : '/cajero/realizar_retiro';
+        const res = await fetch(url, { method:'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id, monto: parseFloat(m)})});
+        const d = await res.json(); alert(d.mensaje||d.error); if(res.ok) cargarClienteId(CLIENTE_ID);
+    };
+    window.cancelarCuenta = async (id) => {
+         if(!confirm("Eliminar?")) return;
+         const res = await fetch('/cajero/cancelar_cuenta', { method:'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id})});
+         const d = await res.json(); alert(d.mensaje||d.error); if(res.ok) cargarClienteId(CLIENTE_ID);
+    };
+    document.getElementById('btn-afiliar-cliente').onclick = async () => {
+        await fetch('/cajero/afiliar_cliente', { method:'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: document.getElementById('cliente-email').textContent, nombre_completo: document.getElementById('cliente-nombre').textContent, fecha_nacimiento: "1990-01-01"})});
+        cargarClienteId(CLIENTE_ID);
+    };
+
+    // --- Modales del Cajero (Replicando funciones del cliente) ---
+    const poblar = (id) => { const s=document.getElementById(id); s.innerHTML=''; CUENTAS_CACHE.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.numero_cuenta} ($${c.saldo})</option>`); return CUENTAS_CACHE.length>0; };
+
+    window.abrirModalCrear = (tipo) => {
+        document.querySelectorAll('#modal-body form').forEach(f => f.style.display='none');
+        modal.style.display='block';
+        if(tipo === 'cuenta') {
+            if(confirm("Crear cuenta?")) fetch('/cajero/crear_cuenta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente_id: CLIENTE_ID})}).then(r=>r.json()).then(d=>{alert(d.mensaje); cargarClienteId(CLIENTE_ID); modal.style.display='none'});
+        } else if (tipo === 'credito') {
+            document.getElementById('form-crear-credito').style.display='block';
+            document.getElementById('form-crear-credito').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/solicitar_credito', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente_id: CLIENTE_ID, monto: parseFloat(document.getElementById('crear-credito-monto').value), plazo: parseInt(document.getElementById('crear-credito-plazo').value), tipo: document.getElementById('crear-credito-tipo').value})}).then(r=>r.json()).then(d=>{alert(d.mensaje); cargarClienteId(CLIENTE_ID); modal.style.display='none'}); }
+        } else if (tipo === 'tarjeta') {
+            document.getElementById('form-crear-tarjeta').style.display='block';
+            document.getElementById('form-crear-tarjeta').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/solicitar_tarjeta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente_id: CLIENTE_ID, cupo: parseFloat(document.getElementById('crear-tarjeta-cupo').value)})}).then(r=>r.json()).then(d=>{alert(d.mensaje); cargarClienteId(CLIENTE_ID); modal.style.display='none'}); }
+        } else if (tipo === 'cdt') {
+            poblar('crear-cdt-origen');
+            document.getElementById('form-crear-cdt').style.display='block';
+            document.getElementById('form-crear-cdt').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/abrir_cdt', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente_id: CLIENTE_ID, monto: parseFloat(document.getElementById('crear-cdt-monto').value), plazo: parseInt(document.getElementById('crear-cdt-plazo').value), id_cuenta_origen: document.getElementById('crear-cdt-origen').value})}).then(r=>r.json()).then(d=>{alert(d.mensaje||d.error); if(d.success){cargarClienteId(CLIENTE_ID); modal.style.display='none'}}); }
         }
-    });
+    };
 
+    // Modales para Operaciones
+    window.abrirModalTransferir = () => {
+        document.querySelectorAll('#modal-body form').forEach(f => f.style.display='none');
+        modal.style.display='block';
+        document.getElementById('form-transferir-cajero').style.display='block';
+        poblar('trans-origen'); poblar('trans-destino');
+        document.getElementById('form-transferir-cajero').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/transferir', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_cuenta_origen: document.getElementById('trans-origen').value, id_cuenta_destino: document.getElementById('trans-destino').value, monto: parseFloat(document.getElementById('trans-monto').value)})}).then(r=>r.json()).then(d=>{alert(d.mensaje||d.error); if(d.success){cargarClienteId(CLIENTE_ID); modal.style.display='none'}}); };
+    };
+    window.abrirModalPagarCredito = (id) => {
+        document.querySelectorAll('#modal-body form').forEach(f => f.style.display='none');
+        modal.style.display='block';
+        document.getElementById('form-pagar-credito-cajero').style.display='block';
+        poblar('pagar-credito-origen');
+        document.getElementById('form-pagar-credito-cajero').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/pagar_credito', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_credito: id, id_cuenta_origen: document.getElementById('pagar-credito-origen').value, monto: parseFloat(document.getElementById('pagar-credito-monto').value)})}).then(r=>r.json()).then(d=>{alert(d.mensaje||d.error); if(d.success){cargarClienteId(CLIENTE_ID); modal.style.display='none'}}); };
+    };
+    window.abrirModalPagarTarjeta = (id) => {
+        document.querySelectorAll('#modal-body form').forEach(f => f.style.display='none');
+        modal.style.display='block';
+        document.getElementById('form-pagar-tarjeta-cajero').style.display='block';
+        poblar('pagar-tarjeta-origen');
+        document.getElementById('form-pagar-tarjeta-cajero').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/pagar_tarjeta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_tarjeta: id, id_cuenta_origen: document.getElementById('pagar-tarjeta-origen').value, monto: parseFloat(document.getElementById('pagar-tarjeta-monto').value)})}).then(r=>r.json()).then(d=>{alert(d.mensaje||d.error); if(d.success){cargarClienteId(CLIENTE_ID); modal.style.display='none'}}); };
+    };
+    window.abrirModalAvance = (id, disp) => {
+        document.querySelectorAll('#modal-body form').forEach(f => f.style.display='none');
+        modal.style.display='block';
+        document.getElementById('form-avance-cajero').style.display='block';
+        poblar('avance-destino');
+        document.getElementById('form-avance-cajero').onsubmit = (e) => { e.preventDefault(); fetch('/cajero/realizar_avance', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_tarjeta: id, id_cuenta_destino: document.getElementById('avance-destino').value, monto: parseFloat(document.getElementById('avance-monto').value)})}).then(r=>r.json()).then(d=>{alert(d.mensaje||d.error); if(d.success){cargarClienteId(CLIENTE_ID); modal.style.display='none'}}); };
+    };
 
-    // ===============================================
-    // LÓGICA DE HISTORIAL (LIFO)
-    // ===============================================
+    document.querySelector('.close-modal').onclick = () => modal.style.display='none';
+    document.getElementById('logout-button').onclick = async () => { await fetch('/cajero/logout', {method:'POST'}); window.location.href='/'; };
 
-    async function cargarHistorialLifo() {
-        const response = await fetch('/cajero/historial/ver');
-        if (!response.ok) return; // Falla silenciosamente si la sesión expira
-        const data = await response.json();
-        historialLifo.innerHTML = '';
-        data.historial.forEach(accion => {
-            const li = document.createElement('li');
-            li.textContent = accion;
-            historialLifo.appendChild(li);
-        });
+    async function actualizarFilas() {
+         const d = await (await fetch('/filas/estado_actual')).json();
+         document.getElementById('lista-preferencial').textContent = `Pref: ${d.fila_preferencial.length}`;
+         document.getElementById('lista-afiliado').textContent = `Afil: ${d.fila_afiliado.length}`;
+         document.getElementById('lista-no_afiliado').textContent = `No Afil: ${d.fila_no_afiliado.length}`;
+         const h = await (await fetch('/cajero/historial/ver')).json();
+         const hl = document.getElementById('historial-lifo'); hl.innerHTML='';
+         h.historial.forEach(x => hl.innerHTML+=`<li>${x}</li>`);
     }
-
-    // ===============================================
-    // LÓGICA DE MODAL (Amortización)
-    // ===============================================
-
-    window.abrirModalAmortizacion = async (id_credito) => {
-        const response = await fetch(`/credito/${id_credito}/amortizacion`);
-        const data = await response.json();
-        cuotaFijaDisplay.textContent = `Cuota Fija Mensual: $${formatCurrency(data.cuota_fija_mensual)}`;
-        tablaAmortizacionBody.innerHTML = '';
-        data.tabla_amortizacion.forEach(fila => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${fila.mes}</td>
-                <td>$${formatCurrency(fila.cuota)}</td>
-                <td>$${formatCurrency(fila.interes)}</td>
-                <td>$${formatCurrency(fila.capital)}</td>
-                <td>$${formatCurrency(fila.saldo_restante)}</td>
-            `;
-            tablaAmortizacionBody.appendChild(tr);
-        });
-        modal.style.display = 'block';
-    }
-
-    closeModalBtn.onclick = () => { modal.style.display = 'none'; }
-    window.onclick = (event) => {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    // ===============================================
-    // HELPERS Y CARGA INICIAL
-    // ===============================================
-    
-    logoutButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        await fetch('/cajero/logout', { method: 'POST' });
-        
-        alert("Sesión de cajero cerrada.");
-        window.location.href = '/'; // Redirigir al menú principal
-    });
-
-    function formatCurrency(value) {
-        
-        if (typeof value !== 'number') {
-            value = parseFloat(value) || 0;
-        }
-        return new Intl.NumberFormat('es-CO', { 
-            minimumFractionDigits: 0, 
-            maximumFractionDigits: 0 
-        }).format(value);
-    }
-
-    // --- Carga Inicial ---
-    actualizarPantallaTurnos();
-    cargarHistorialLifo();
-    setInterval(actualizarPantallaTurnos, 5000);
+    setInterval(actualizarFilas, 5000);
 });

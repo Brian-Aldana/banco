@@ -2,90 +2,47 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: var(--lulo-morado);
-            padding: 2rem 0; /* Espacio por si el form es largo en móviles */
-        }
-        .register-card {
-            max-width: 500px;
-            width: 100%;
-            padding: 2.5rem;
-        }
-        .register-card h1 {
-            color: var(--lulo-fucsia);
-            font-weight: 700;
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        .btn-primary {
-            width: 100%;
-        }
-        #message {
-            margin-top: 1rem;
-            text-align: center;
-            display: none; /* Oculto por defecto */
-        }
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-        }
-        .register-link a {
-            color: var(--lulo-fucsia);
-            font-weight: 600;
-        }
-    </style>
 </head>
 <body>
-
-    <div class="card register-card">
-        <h1>Crea tu cuenta</h1>
-        
-        <form id="register-form">
-            <div class="form-group">
-                <label for="nombre_completo">Nombre Completo</label>
-                <input type="text" id="nombre_completo" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="fecha_nacimiento">Fecha de Nacimiento</label>
-                <input type="date" id="fecha_nacimiento" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <input type="checkbox" id="tiene_discapacidad">
-                <label for="tiene_discapacidad" style="display: inline-block;">Tengo alguna discapacidad</label>
-            </div>
+    <div class="container login-container">
+        <div class="card login-card-center" style="max-width: 500px;">
+            <div class="card-icon">📝</div>
+            <h1>Registro</h1>
+            <p class="subtitle" style="margin-bottom: 20px;">Crea tu cuenta ahora</p>
             
-            <button type="submit" class="btn btn-primary">Crear Cuenta</button>
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="nombre_completo" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha Nacimiento</label>
+                    <input type="date" id="fecha_nacimiento" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="tiene_discapacidad"> 
+                    <label style="display:inline;">Tengo discapacidad</label>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Registrarse</button>
+                <p id="message" style="margin-top: 15px; font-weight: bold;"></p>
+            </form>
             
-            <p id="message"></p>
-        </form>
-
-        <p class="register-link">
-            ¿Ya tienes cuenta? <a href="{{ url_for('login_page') }}">Inicia sesión</a>
-        </p>
+            <p style="margin-top: 20px;">
+                <a href="{{ url_for('login_page') }}" style="color: #7b1bda;">¿Ya tienes cuenta? Ingresa aquí</a>
+            </p>
+        </div>
     </div>
-
     <script src="{{ url_for('static', filename='js/register.js') }}"></script>
 </body>
 </html>

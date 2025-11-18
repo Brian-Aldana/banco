@@ -1,57 +1,38 @@
-// static/js/register.js
 document.addEventListener('DOMContentLoaded', () => {
-
-    const registerForm = document.getElementById('register-form');
-    const messageElement = document.getElementById('message');
-
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-
-        const nombre_completo = document.getElementById('nombre_completo').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const fecha_nacimiento = document.getElementById('fecha_nacimiento').value;
-        const tiene_discapacidad = document.getElementById('tiene_discapacidad').checked;
-
-        messageElement.style.display = 'none';
-        messageElement.style.color = 'red';
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const data = {
+            nombre_completo: document.getElementById('nombre_completo').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
+            tiene_discapacidad: document.getElementById('tiene_discapacidad').checked
+        };
 
         try {
-            const response = await fetch('/cliente/registrar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    nombre_completo,
-                    email,
-                    password,
-                    fecha_nacimiento,
-                    tiene_discapacidad
-                })
+            const res = await fetch('/cliente/registrar', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(data)
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Lo enviamos directo a su dashboard.
-                messageElement.textContent = "¡Registro exitoso! Redirigiendo a tu perfil...";
-                messageElement.style.color = 'green';
-                messageElement.style.display = 'block';
-
-                setTimeout(() => {
-                    window.location.href = '/dashboard_cliente';
-                }, 1500);
-
-            } else {
-                messageElement.textContent = data.error || 'Error en el registro.';
-                messageElement.style.display = 'block';
+            
+            const r = await res.json();
+            const msg = document.getElementById('message');
+            
+            msg.textContent = r.mensaje || r.error;
+            msg.style.color = res.ok ? 'green' : 'red';
+            
+            // Si el registro es exitoso, redirige al dashboard del cliente
+            if (res.ok) {
+                setTimeout(() => window.location.href = '/dashboard_cliente', 1500);
             }
-
-        } catch (error) {
-            console.error('Error de red:', error);
-            messageElement.textContent = 'Error de conexión. Inténtalo de nuevo.';
-            messageElement.style.display = 'block';
+            
+        } catch (e) { 
+            console.error(e);
+            const msg = document.getElementById('message');
+            msg.textContent = "Error de conexión.";
+            msg.style.color = 'red';
         }
     });
 });

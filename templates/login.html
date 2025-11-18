@@ -2,70 +2,38 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        /* Estilos específicos de esta página */
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: var(--lulo-morado);
-        }
-        .login-card {
-            max-width: 450px;
-            width: 100%;
-            padding: 2.5rem;
-            text-align: center;
-        }
-        .login-card h1 {
-            color: var(--lulo-fucsia);
-            font-weight: 700;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        .login-card p {
-            margin-bottom: 2rem;
-        }
-        .btn-primary {
-            width: 100%; /* Botón de ancho completo */
-        }
-        #error-message {
-            color: red;
-            margin-top: 1rem;
-            display: none; /* Oculto por defecto */
-        }
-    </style>
 </head>
 <body>
-
-    <div class="card login-card">
-        <h1>Banco Ucundinamarca</h1>
-        <p>Inspirado en Lulo Bank</p>
-        
-        <form id="login-form">
-            <div class="form-group" style="text-align: left;">
-                <label for="email">Tu Correo</label>
-                <input type="email" id="email" class="form-control" placeholder="ejemplo@correo.com" required>
-            </div>
-            <div class="form-group" style="text-align: left;">
-                <label for="password">Tu Contraseña</label>
-                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
-            </div>
+    <div class="container login-container">
+        <div class="card login-card-center">
+            <div class="card-icon">🔐</div>
+            <h1>Bienvenido</h1>
+            <p class="subtitle" style="margin-bottom: 20px;">Ingresa a tu banca virtual</p>
             
-            <button type="submit" class="btn btn-primary">Ingresar</button>
-            
-            <p id="error-message"></p>
-        </form>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" class="form-control" placeholder="ejemplo@correo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Ingresar</button>
+                <p id="error-message" style="color: #e53935; margin-top: 15px; display: none;"></p>
+            </form>
 
-        <p class="register-link">
-            ¿No tienes cuenta? <a href="{{ url_for('register_page') }}">Regístrate aquí</a>
-        </p>
-
+            <p class="register-link" style="margin-top: 15px;">
+                ¿No tienes cuenta? <a href="{{ url_for('register_page') }}" style="color: #7b1bda; font-weight: bold;">Regístrate aquí</a>
+            </p>
+            <p style="margin-top: 10px;">
+                <a href="{{ url_for('index_page') }}" style="color: #666; text-decoration: none; font-size: 0.9rem;">← Volver al inicio</a>
+            </p>
+        </div>
     </div>
-
     <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 </html>

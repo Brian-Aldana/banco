@@ -1,214 +1,337 @@
-/* static/css/style.css */
-
-/* 1. Importar la fuente de Lulo (o una similar) */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-/* 2. Definir los colores de Lulo Bank */
-:root {
-    --lulo-fucsia: #E4007B;
-    --lulo-morado: #2D005B;
-    --lulo-lila: #F3F0F6;
-    --blanco: #FFFFFF;
-    --gris-texto: #5c5c5c;
-    --sombra-tarjeta: 0 4px 15px rgba(45, 0, 91, 0.05);
-}
-
-/* 3. Reseteo y Base */
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
 }
 
 body {
-    background-color: var(--lulo-lila); /* Fondo lila muy claro */
-    color: var(--gris-texto);
+    margin: 0;
+    padding: 0;
+    /* El fondo degradado de tu archivo */
+    background: linear-gradient(to bottom, #ead9f7, #e6d3f5, #e1cdf3);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
+/* --- Tipografía y Títulos --- */
+h1 {
+    font-size: 38px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: #6d25a8; /* Morado fuerte */
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+    color: #5a4d67;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+h3, h4 {
+    color: #6d25a8;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #5a4d67;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* --- Contenedor Principal --- */
 .container {
-    max-width: 1100px;
+    width: 100%;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 20px;
+    flex: 1; /* Para que el footer se vaya al fondo */
 }
 
-/* 4. Componentes "Lulo" reutilizables */
+/* --- Tarjetas (Cards) --- */
+.card {
+    background: white;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 6px 25px rgba(170, 117, 200, 0.25);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
 
-/* Estilo de Botón (clave) */
-.btn {
+/* Contenedor de tarjetas para el menú inicio */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+/* Tarjeta específica de menú (Inicio) */
+.menu-card {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.menu-card:hover {
+    transform: translateY(-8px);
+}
+
+.card-icon {
+    font-size: 48px;
+    background: #e8d7f7; 
+    color: #6d25a8;
+    padding: 25px;
+    border-radius: 50%;
+    margin-bottom: 20px;
     display: inline-block;
-    padding: 12px 28px;
-    border-radius: 99px; /* Totalmente redondeado */
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
+}
+
+.card-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.card-desc {
+    font-size: 15px;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+/* --- Botones (Estilo Degradado) --- */
+.btn {
+    background: linear-gradient(90deg, #7b1bda 0%, #b36bff 100%);
+    color: white;
     border: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 10px 26px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 18px rgba(123, 27, 218, 0.35);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(123, 27, 218, 0.45);
 }
 
-/* Botón Primario (Fucsia) */
-.btn-primary {
-    background-color: var(--lulo-fucsia);
-    color: var(--blanco);
+/* Variantes de botones para acciones específicas */
+.btn-small {
+    padding: 6px 15px;
+    font-size: 14px;
+    border-radius: 8px;
 }
 
-/* Botón Secundario (Morado) */
 .btn-secondary {
-    background-color: var(--lulo-morado);
-    color: var(--blanco);
+    background: white;
+    color: #7b1bda;
+    border: 2px solid #7b1bda;
+    box-shadow: none;
+}
+.btn-secondary:hover {
+    background: #f3e5f5;
+    transform: scale(1.05);
 }
 
-/* Inputs de Formulario */
-.form-group {
-    margin-bottom: 1.25rem;
+.btn-rojo, .btn-cancelar {
+    background: linear-gradient(90deg, #e53935 0%, #ff6f60 100%);
+    box-shadow: 0 6px 18px rgba(229, 57, 53, 0.35);
+}
+.btn-rojo:hover, .btn-cancelar:hover {
+    box-shadow: 0 8px 25px rgba(229, 57, 53, 0.45);
 }
 
-.form-group label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: var(--lulo-morado);
+.btn-verde {
+    background: linear-gradient(90deg, #43a047 0%, #76d275 100%);
+    box-shadow: 0 6px 18px rgba(67, 160, 71, 0.35);
 }
 
-.form-control {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    background-color: var(--blanco);
+.btn-info {
+    background: linear-gradient(90deg, #0288d1 0%, #4fc3f7 100%);
+    box-shadow: 0 6px 18px rgba(2, 136, 209, 0.35);
 }
 
-.form-control:focus {
-    outline: none;
-    border-color: var(--lulo-fucsia);
-    box-shadow: 0 0 0 3px rgba(228, 0, 123, 0.2);
+/* --- Layouts (Dashboard y Cajero) --- */
+.layout-dashboard {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
 }
 
-/* Tarjetas (Cards) */
-.card {
-    background: var(--blanco);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: var(--sombra-tarjeta);
-    margin-bottom: 1.5rem;
+.layout-cajero {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 30px;
 }
 
-h1, h2, h3 {
-    color: var(--lulo-morado);
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
-/* --- Estilos para enlace de registro --- */
-.register-link {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-}
-.register-link a {
-    color: var(--lulo-fucsia);
-    font-weight: 600;
-    text-decoration: none;
-}
-.register-link a:hover {
-    text-decoration: underline;
-}
-
-/* --- Estilos de Dashboard --- */
+/* Header interno de secciones */
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem; 
-}
-.section-header h2 {
-    margin-bottom: 0; 
-}
-.btn-small {
-    padding: 5px 15px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e1cdf3;
 }
 
-/* --- Estilos de Operaciones --- */
+/* Cards de productos específicos */
+.producto-card {
+    border-left: 6px solid #7b1bda; /* Borde lateral morado */
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.producto-card .saldo {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #6d25a8;
+}
+.producto-card .numero-cuenta {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* --- Formularios --- */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #5a4d67;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e1cdf3;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fdfbff;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #7b1bda;
+    background: white;
+}
+
+/* Operación Item (Inputs dentro de tarjetas) */
 .operacion-item {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
-    border-top: 1px solid var(--lulo-lila);
-    padding-top: 1.5rem;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #e1cdf3;
 }
-.operacion-item .form-control {
-    /* Hacer el input más pequeño */
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    flex-grow: 1; /* Ocupar el espacio restante */
-}
-.btn-verde { background-color: #4CAF50; color: white; }
-.btn-rojo { background-color: #f44336; color: white; }
 
-.btn-cancelar {
-    background-color: #9E9E9E; /* Gris */
-    color: white;
-}
-.btn-pagar {
-    background-color: #03A9F4; /* Azul Claro */
-    color: white;
-}
-.btn-info {
-    background-color: #2196F3; /* Azul */
-    color: white;
-}
 .card-acciones {
+    margin-top: 15px;
     display: flex;
-    flex-wrap: wrap; /* Para que se ajusten en móviles */
-    gap: 0.5rem;
-    justify-content: flex-start; /* Alinear botones */
-    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 10px;
 }
+
+/* --- Modales --- */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(109, 37, 168, 0.4); /* Fondo morado semitransparente */
+    backdrop-filter: blur(4px); /* Efecto borroso */
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 5% auto; 
+    padding: 40px; 
+    border-radius: 24px;
+    width: 90%; 
+    max-width: 600px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 25px;
+    top: 20px;
+}
+.close-modal:hover { color: #7b1bda; }
+
+/* --- Tablas --- */
+table { width: 100%; border-collapse: collapse; }
+th { background-color: #f3e5f5; color: #6d25a8; padding: 12px; text-align: left; border-radius: 8px 8px 0 0; }
+td { padding: 12px; border-bottom: 1px solid #eee; }
+
+/* --- Badges --- */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: white;
+}
+.status-badge.afiliado { background: #43a047; }
+.status-badge.no-afiliado { background: #e53935; }
 .exenta-badge {
-    display: inline-block;
-    background-color: var(--lulo-morado);
+    background: #7b1bda;
     color: white;
     font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 99px;
-    margin-left: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-left: 5px;
 }
 
-/* Estilos para el modal de transacciones (LIFO) */
-#transaccion-lista {
-    list-style: none;
-    max-height: 400px;
-    overflow-y: auto;
-}
-#transaccion-lista li {
+/* --- Login Cards --- */
+.login-container {
     display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid var(--lulo-lila);
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
 }
-#transaccion-lista li:first-child {
-    font-weight: 600; /* Resaltar la más reciente (LIFO) */
+.login-card-center {
+    width: 100%;
+    max-width: 420px;
 }
-#transaccion-lista .transaccion-monto {
-    font-weight: 600;
-}
-#transaccion-lista .transaccion-monto.retiro {
-    color: var(--lulo-fucsia);
-}
-#transaccion-lista .transaccion-monto.consignacion {
-    color: #4CAF50;
-}
-#transaccion-lista .transaccion-fecha {
-    font-size: 0.8rem;
-    color: var(--gris-texto);
+
+/* Footer */
+.footer {
+    text-align: center;
+    font-size: 14px;
+    color: #5a4d67;
+    margin-top: 40px;
+    padding-bottom: 20px;
 }
