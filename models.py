@@ -22,16 +22,18 @@ class TipoTransaccion(str, enum.Enum):
     RETIRO = "Retiro"
     CONSIGNACION = "Consignación"
     PAGO = "Pago"
+    TRANSFERENCIA = "Transferencia" # Agregado para claridad
+    AJUSTE = "Ajuste" # Para cerrar cuentas con centavos
 
 class Cajero(db.Model):
-    __tablename__ = 'cajero'
+    __tablename__ = 'cajeros' 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(256))
     nombre: Mapped[str] = mapped_column(String(100))
 
 class Cliente(db.Model):
-    __tablename__ = 'cliente'
+    __tablename__ = 'clientes' 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nombre_completo: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -46,52 +48,53 @@ class Cliente(db.Model):
     cdts: Mapped[List["CDT"]] = relationship(back_populates="cliente")
 
 class CuentaAhorros(db.Model):
-    __tablename__ = 'cuentaahorros'
+    __tablename__ = 'cuentas_ahorros'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     numero_cuenta: Mapped[str] = mapped_column(String(50), unique=True)
     saldo: Mapped[float] = mapped_column(Float, default=0.0)
     exenta_4x1000: Mapped[bool] = mapped_column(Boolean, default=False)
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("cliente.id"))
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"))
     cliente: Mapped[Cliente] = relationship(back_populates="cuentas_ahorros")
-    transacciones: Mapped[List["Transaccion"]] = relationship(back_populates="cuenta")
+    transacciones: Mapped[List["Transaccion"]] = relationship(back_populates="cuenta", cascade="all, delete-orphan")
 
 class TarjetaCredito(db.Model):
-    __tablename__ = 'tarjetacredito'
+    __tablename__ = 'tarjetas_credito'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     numero_tarjeta: Mapped[str] = mapped_column(String(16), unique=True)
     cupo_total: Mapped[float] = mapped_column(Float)
     cupo_usado: Mapped[float] = mapped_column(Float, default=0.0)
     tasa_interes_mensual: Mapped[float] = mapped_column(Float)
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("cliente.id"))
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"))
     cliente: Mapped[Cliente] = relationship(back_populates="tarjetas_credito")
 
 class Credito(db.Model):
-    __tablename__ = 'credito'
+    __tablename__ = 'creditos'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tipo_credito: Mapped[TipoCredito] = mapped_column(SQLAlchemyEnum(TipoCredito))
     monto_aprobado: Mapped[float] = mapped_column(Float)
     saldo_pendiente: Mapped[float] = mapped_column(Float)
     tasa_interes_anual: Mapped[float] = mapped_column(Float)
     plazo_meses: Mapped[int] = mapped_column(Integer)
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("cliente.id"))
+    pagado: Mapped[bool] = mapped_column(Boolean, default=False)
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"))
     cliente: Mapped[Cliente] = relationship(back_populates="creditos")
 
 class CDT(db.Model):
-    __tablename__ = 'cdt'
+    __tablename__ = 'cdts'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     monto_inversion: Mapped[float] = mapped_column(Float)
     plazo_dias: Mapped[int] = mapped_column(Integer)
     tasa_interes_anual: Mapped[float] = mapped_column(Float)
     fecha_creacion: Mapped[datetime.date] = mapped_column(Date)
     fecha_vencimiento: Mapped[datetime.date] = mapped_column(Date)
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("cliente.id"))
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"))
     cliente: Mapped[Cliente] = relationship(back_populates="cdts")
 
 class Transaccion(db.Model):
-    __tablename__ = 'transaccion'
+    __tablename__ = 'transacciones'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tipo: Mapped[TipoTransaccion] = mapped_column(SQLAlchemyEnum(TipoTransaccion))
     monto: Mapped[float] = mapped_column(Float)
     fecha: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
-    cuenta_id: Mapped[int] = mapped_column(ForeignKey("cuentaahorros.id"))
+    cuenta_id: Mapped[int] = mapped_column(ForeignKey("cuentas_ahorros.id"))
     cuenta: Mapped["CuentaAhorros"] = relationship(back_populates="transacciones")

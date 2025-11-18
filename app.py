@@ -22,7 +22,6 @@ filas = {"preferencial": deque(), "afiliado": deque(), "no_afiliado": deque()}
 contadores_turnos = {"preferencial": 0, "afiliado": 0, "no_afiliado": 0}
 turno_actual_en_caja = None
 
-# --- Rutas HTML ---
 @app.route('/')
 def index_page(): return render_template('index.html')
 @app.route('/login')
@@ -46,7 +45,9 @@ def registrar_cliente():
     data = request.json
     try:
         hashed = generate_password_hash(data['password'])
-        nuevo = Cliente(nombre_completo=data['nombre_completo'], email=data['email'], password_hash=hashed, fecha_nacimiento=datetime.date.fromisoformat(data['fecha_nacimiento']), tiene_discapacidad=data.get('tiene_discapacidad', False), tipo_cliente=TipoCliente.NO_AFILIADO)
+        fecha_nac = datetime.date.fromisoformat(data['fecha_nacimiento'])
+        if fecha_nac > datetime.date.today(): return jsonify({"error": "Fecha futura no permitida"}), 400
+        nuevo = Cliente(nombre_completo=data['nombre_completo'], email=data['email'], password_hash=hashed, fecha_nacimiento=fecha_nac, tiene_discapacidad=data.get('tiene_discapacidad', False), tipo_cliente=TipoCliente.NO_AFILIADO)
         db.session.add(nuevo); db.session.commit(); db.session.refresh(nuevo)
         session['cliente_id'] = nuevo.id; session['cliente_nombre'] = nuevo.nombre_completo
         return jsonify({"mensaje": "Registro exitoso", "id": nuevo.id}), 201
@@ -69,7 +70,7 @@ def logout(): session.clear(); return jsonify({"mensaje": "Sesión cerrada"})
 def get_perfil():
     c = db.session.get(Cliente, session['cliente_id'])
     cuentas = [{"id": x.id, "numero_cuenta": x.numero_cuenta, "saldo": x.saldo, "exenta_4x1000": x.exenta_4x1000} for x in c.cuentas_ahorros]
-    creditos = [{"id": x.id, "tipo_credito": x.tipo_credito.value, "monto_aprobado": x.monto_aprobado, "saldo_pendiente": x.saldo_pendiente} for x in c.creditos]
+    creditos = [{"id": x.id, "tipo_credito": x.tipo_credito.value, "monto_aprobado": x.monto_aprobado, "saldo_pendiente": x.saldo_pendiente} for x in c.creditos if not x.pagado]
     tarjetas = [{"id": x.id, "numero_tarjeta": "XXXX " + x.numero_tarjeta[-4:], "cupo_total": x.cupo_total, "cupo_usado": x.cupo_usado, "tasa_interes_mensual": x.tasa_interes_mensual} for x in c.tarjetas_credito]
     cdts = [{"id": x.id, "monto_inversion": x.monto_inversion, "plazo_dias": x.plazo_dias, "tasa_interes_anual": x.tasa_interes_anual} for x in c.cdts]
     return jsonify({"id": c.id, "nombre": c.nombre_completo, "email": c.email, "tipo_cliente": c.tipo_cliente.value, "cuentas_ahorros": cuentas, "creditos": creditos, "tarjetas_credito": tarjetas, "cdts": cdts})
@@ -82,8 +83,7 @@ def afiliarme():
     c.tipo_cliente = TipoCliente.AFILIADO; db.session.commit()
     return jsonify({"success": True, "mensaje": "¡Ahora eres afiliado!"})
 
-# --- Operaciones Cliente (Lógica Compartida) ---
-# Función helper para reusar lógica en cajero
+# --- Helper 4x1000 ---
 def ejecutar_retiro(cuenta, monto):
     impuesto = 0 if cuenta.exenta_4x1000 else monto * 0.004
     total = monto + impuesto
@@ -93,6 +93,7 @@ def ejecutar_retiro(cuenta, monto):
     if impuesto > 0: db.session.add(Transaccion(tipo=TipoTransaccion.PAGO, monto=impuesto, cuenta_id=cuenta.id))
     return True, "Retiro exitoso", impuesto
 
+# --- Operaciones Cliente ---
 @app.route('/cliente/retirar', methods=['POST'])
 @login_required
 def cliente_retirar():
@@ -118,12 +119,54 @@ def cliente_consignar():
 def transferir():
     d = request.json; org = db.session.get(CuentaAhorros, d.get('id_cuenta_origen')); dest = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
     if not org or not dest or org.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
+    if org.id == dest.id: return jsonify({"error": "Misma cuenta"}), 400
     m = float(d.get('monto'))
-    ok, msg, imp = ejecutar_retiro(org, m) # Reusamos lógica de retiro (cobra 4x1000)
-    if not ok: return jsonify({"error": msg}), 400
-    dest.saldo += m; db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=dest.id))
+    if org.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400
+    org.saldo -= m; dest.saldo += m
+    db.session.add(Transaccion(tipo=TipoTransaccion.RETIRO, monto=m, cuenta_id=org.id))
+    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=dest.id))
     db.session.commit(); log_action_lifo(f"Transfirió ${m}")
     return jsonify({"success": True, "mensaje": "Transferencia exitosa"})
+
+@app.route('/cliente/pagar_tarjeta', methods=['POST'])
+@login_required
+def pagar_tarjeta():
+    d = request.json; t = db.session.get(TarjetaCredito, d.get('id_tarjeta')); c = db.session.get(CuentaAhorros, d.get('id_cuenta_origen'))
+    if not t or not c or c.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
+    m = float(d.get('monto'))
+    if m > t.cupo_usado: m = t.cupo_usado
+    if m <= 0: return jsonify({"error": "Monto inválido"}), 400
+    if c.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400
+    c.saldo -= m; t.cupo_usado -= m
+    if t.cupo_usado < 0: t.cupo_usado = 0
+    db.session.add(Transaccion(tipo=TipoTransaccion.RETIRO, monto=m, cuenta_id=c.id))
+    db.session.commit(); log_action_lifo(f"Pagó tarjeta ${m}")
+    return jsonify({"success": True, "mensaje": "Pago exitoso"})
+
+@app.route('/cliente/pagar_credito', methods=['POST'])
+@login_required
+def pagar_credito():
+    d = request.json; cr = db.session.get(Credito, d.get('id_credito')); c = db.session.get(CuentaAhorros, d.get('id_cuenta_origen'))
+    if not cr or not c or c.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
+    m = float(d.get('monto'))
+    if m > cr.saldo_pendiente: m = cr.saldo_pendiente
+    if c.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400
+    c.saldo -= m; cr.saldo_pendiente -= m
+    if cr.saldo_pendiente <= 0: cr.saldo_pendiente = 0; cr.pagado = True
+    db.session.add(Transaccion(tipo=TipoTransaccion.PAGO, monto=m, cuenta_id=c.id))
+    db.session.add(c); db.session.add(cr); db.session.commit()
+    return jsonify({"success": True, "mensaje": "Abono exitoso"})
+
+@app.route('/cliente/realizar_avance', methods=['POST'])
+@login_required
+def realizar_avance():
+    d = request.json; t = db.session.get(TarjetaCredito, d.get('id_tarjeta')); c = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
+    if not t or not c or t.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
+    m = float(d.get('monto'))
+    if (t.cupo_total - t.cupo_usado) < m: return jsonify({"error": "Cupo insuficiente"}), 400
+    t.cupo_usado += m; c.saldo += m
+    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id))
+    db.session.commit(); return jsonify({"success": True, "mensaje": "Avance exitoso"})
 
 @app.route('/cliente/crear_cuenta_ahorros', methods=['POST'])
 @login_required
@@ -139,8 +182,11 @@ def crear_cuenta_ahorros():
 def solicitar_credito():
     d = request.json; c = db.session.get(Cliente, session['cliente_id'])
     if c.tipo_cliente != TipoCliente.AFILIADO: return jsonify({"error": "Debes ser afiliado"}), 403
-    t = TipoCredito[d.get('tipo')]
-    db.session.add(Credito(tipo_credito=t, monto_aprobado=d.get('monto'), saldo_pendiente=d.get('monto'), tasa_interes_anual=0.25, plazo_meses=d.get('plazo'), cliente_id=c.id))
+    cta = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
+    if not cta: return jsonify({"error": "Cuenta destino inválida"}), 400
+    m = float(d.get('monto')); t = TipoCredito[d.get('tipo')]
+    cred = Credito(tipo_credito=t, monto_aprobado=m, saldo_pendiente=m, tasa_interes_anual=0.25, plazo_meses=d.get('plazo'), cliente_id=c.id, pagado=False)
+    cta.saldo += m; db.session.add(cred); db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=cta.id))
     db.session.commit(); return jsonify({"success": True, "mensaje": "Crédito aprobado"})
 
 @app.route('/cliente/solicitar_tarjeta', methods=['POST'])
@@ -159,67 +205,53 @@ def abrir_cdt():
     if c.tipo_cliente != TipoCliente.AFILIADO: return jsonify({"error": "Debes ser afiliado"}), 403
     cta = db.session.get(CuentaAhorros, d.get('id_cuenta_origen'))
     m = float(d.get('monto'))
-    ok, msg, imp = ejecutar_retiro(cta, m) # Cobra 4x1000
-    if not ok: return jsonify({"error": msg}), 400
+    if not cta or cta.cliente_id != c.id: return jsonify({"error": "Cuenta inválida"}), 400
+    if cta.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400
+    cta.saldo -= m
     cdt = CDT(monto_inversion=m, plazo_dias=d.get('plazo_dias'), tasa_interes_anual=0.12, fecha_creacion=datetime.date.today(), fecha_vencimiento=datetime.date.today()+datetime.timedelta(days=int(d.get('plazo_dias'))), cliente_id=c.id)
-    db.session.add(cdt); db.session.commit()
+    db.session.add(cta); db.session.add(cdt); db.session.commit()
     return jsonify({"success": True, "mensaje": "CDT Abierto"})
-
-@app.route('/cliente/pagar_tarjeta', methods=['POST'])
-@login_required
-def pagar_tarjeta():
-    d = request.json; t = db.session.get(TarjetaCredito, d.get('id_tarjeta')); c = db.session.get(CuentaAhorros, d.get('id_cuenta_origen'))
-    if not t or not c or c.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
-    m = float(d.get('monto'))
-    if m > t.cupo_usado: m = t.cupo_usado
-    if m <= 0: return jsonify({"error": "Monto inválido"}), 400
-    ok, msg, imp = ejecutar_retiro(c, m)
-    if not ok: return jsonify({"error": msg}), 400
-    t.cupo_usado -= m; db.session.commit(); log_action_lifo(f"Pagó tarjeta ${m}")
-    return jsonify({"success": True, "mensaje": "Pago exitoso"})
-
-@app.route('/cliente/pagar_credito', methods=['POST'])
-@login_required
-def pagar_credito():
-    d = request.json; cr = db.session.get(Credito, d.get('id_credito'))
-    if not cr or cr.cliente_id != session['cliente_id']: return jsonify({"error": "Crédito inválido"}), 403
-    c = db.session.scalars(db.select(CuentaAhorros).where(CuentaAhorros.cliente_id==session['cliente_id'])).first()
-    if not c: return jsonify({"error": "Sin cuenta"}), 400
-    m = float(d.get('monto'))
-    if m > cr.saldo_pendiente: m = cr.saldo_pendiente
-    ok, msg, imp = ejecutar_retiro(c, m)
-    if not ok: return jsonify({"error": msg}), 400
-    cr.saldo_pendiente -= m; db.session.commit()
-    return jsonify({"success": True, "mensaje": "Abono exitoso"})
-
-@app.route('/cliente/realizar_avance', methods=['POST'])
-@login_required
-def realizar_avance():
-    d = request.json; t = db.session.get(TarjetaCredito, d.get('id_tarjeta')); c = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
-    if not t or not c or t.cliente_id != session['cliente_id']: return jsonify({"error": "Datos inválidos"}), 403
-    m = float(d.get('monto'))
-    if (t.cupo_total - t.cupo_usado) < m: return jsonify({"error": "Cupo insuficiente"}), 400
-    t.cupo_usado += m; c.saldo += m
-    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id))
-    db.session.commit(); return jsonify({"success": True, "mensaje": "Avance exitoso"})
 
 @app.route('/cliente/eliminar_cuenta', methods=['POST'])
 @login_required
 def eliminar_cuenta():
     c = db.session.get(CuentaAhorros, request.json.get('id_cuenta'))
     if not c or c.cliente_id != session['cliente_id']: return jsonify({"error": "Cuenta inválida"}), 403
+    if c.saldo > 0 and c.saldo < 50: c.saldo = 0 
     if c.saldo > 0: return jsonify({"error": "La cuenta debe tener saldo 0"}), 400
     db.session.query(Transaccion).filter(Transaccion.cuenta_id == c.id).delete()
     db.session.delete(c); db.session.commit()
     return jsonify({"success": True, "mensaje": "Cuenta eliminada"})
 
+@app.route('/cliente/eliminar_tarjeta', methods=['POST'])
+@login_required
+def eliminar_tarjeta():
+    t = db.session.get(TarjetaCredito, request.json.get('id_tarjeta'))
+    if not t or t.cliente_id != session['cliente_id']: return jsonify({"error": "Inválida"}), 403
+    if t.cupo_usado > 100: return jsonify({"error": "Debes pagar la deuda"}), 400
+    db.session.delete(t); db.session.commit()
+    return jsonify({"success": True, "mensaje": "Tarjeta eliminada"})
+
+# --- CORRECCION MARCAR EXENTA CLIENTE ---
 @app.route('/cliente/marcar_exenta', methods=['POST'])
 @login_required
 def marcar_exenta():
     c = db.session.get(Cliente, session['cliente_id'])
-    for cuenta in c.cuentas_ahorros: cuenta.exenta_4x1000 = False
-    target = db.session.get(CuentaAhorros, request.json.get('id_cuenta'))
-    if target and target.cliente_id == c.id: target.exenta_4x1000 = True; db.session.commit()
+    target_id = request.json.get('id_cuenta')
+    
+    # 1. Validar cuenta
+    target = db.session.get(CuentaAhorros, target_id)
+    if not target or target.cliente_id != c.id:
+        return jsonify({"error": "Cuenta no válida"}), 403
+    
+    # 2. Desmarcar todas
+    for cuenta in c.cuentas_ahorros:
+        cuenta.exenta_4x1000 = False
+        
+    # 3. Marcar target
+    target.exenta_4x1000 = True
+    db.session.commit()
+    
     return jsonify({"success": True, "mensaje": "Cuenta marcada como exenta"})
 
 @app.route('/cliente/credito/<int:id_credito>/amortizacion', methods=['GET'])
@@ -238,8 +270,7 @@ def get_transacciones(id_cuenta):
     trans = db.session.scalars(db.select(Transaccion).where(Transaccion.cuenta_id==id_cuenta).order_by(Transaccion.fecha.desc())).all()
     return jsonify([{"tipo": t.tipo.value, "monto": t.monto, "fecha": t.fecha.strftime("%Y-%m-%d %H:%M")} for t in trans])
 
-
-# --- CAJERO ---
+# --- CAJERO API ---
 @app.route('/cajero/login', methods=['POST'])
 def cajero_login_api():
     data = request.json
@@ -292,34 +323,122 @@ def estado_filas():
         "fila_no_afiliado": [t.numero_turno for t in filas['no_afiliado']]
     })
 
-# Búsqueda Cajero
 @app.route('/cajero/buscar_cliente', methods=['POST'])
 @cajero_login_required
 def cajero_buscar_cliente():
     term = request.json.get('search_term')
-    c = db.session.scalar(db.select(Cliente).where(Cliente.email == term))
-    if not c and term.isdigit(): c = db.session.get(Cliente, int(term))
+    term_str = str(term)
+    c = db.session.scalar(db.select(Cliente).where(Cliente.email == term_str))
+    if not c and term_str.isdigit(): c = db.session.get(Cliente, int(term_str))
     if not c: return jsonify({"error": "No encontrado"}), 404
     
     cuentas = [{"id": x.id, "numero_cuenta": x.numero_cuenta, "saldo": x.saldo, "exenta_4x1000": x.exenta_4x1000} for x in c.cuentas_ahorros]
-    creditos = [{"id": x.id, "tipo_credito": x.tipo_credito.value, "monto_aprobado": x.monto_aprobado, "saldo_pendiente": x.saldo_pendiente} for x in c.creditos]
+    creditos = [{"id": x.id, "tipo_credito": x.tipo_credito.value, "monto_aprobado": x.monto_aprobado, "saldo_pendiente": x.saldo_pendiente} for x in c.creditos if not x.pagado]
     tarjetas = [{"id": x.id, "numero_tarjeta": "XXXX " + x.numero_tarjeta[-4:], "cupo_total": x.cupo_total, "cupo_usado": x.cupo_usado} for x in c.tarjetas_credito]
     cdts = [{"id": x.id, "monto_inversion": x.monto_inversion} for x in c.cdts]
     
     return jsonify({"id": c.id, "nombre_completo": c.nombre_completo, "email": c.email, "tipo_cliente": c.tipo_cliente.value, "cuentas_ahorros": cuentas, "creditos": creditos, "tarjetas_credito": tarjetas, "cdts": cdts})
 
-# Operaciones Cajero (Mismas que Cliente pero con ID explicito y sin session de cliente)
+@app.route('/cajero/consignar_tercero', methods=['POST'])
+@cajero_login_required
+def cajero_consignar_tercero():
+    d=request.json; c=db.session.scalar(db.select(CuentaAhorros).where(CuentaAhorros.numero_cuenta==d.get('numero_cuenta')))
+    if not c: return jsonify({"error": "No existe cuenta"}), 404
+    c.saldo += float(d.get('monto')); db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=float(d.get('monto')), cuenta_id=c.id))
+    db.session.commit(); return jsonify({"mensaje": "Exito"})
+
+@app.route('/cajero/crear_cuenta', methods=['POST'])
+@cajero_login_required
+def cajero_crear_cuenta():
+    d=request.json; c=db.session.get(Cliente, d.get('cliente_id'))
+    num = f"410-{random.randint(100000, 999999)}-{c.id}"
+    db.session.add(CuentaAhorros(numero_cuenta=num, saldo=0.0, cliente_id=c.id)); db.session.commit()
+    return jsonify({"success":True, "mensaje":"Creada"})
+
+@app.route('/cajero/solicitar_credito', methods=['POST'])
+@cajero_login_required
+def cajero_crear_credito():
+    d=request.json; c=db.session.get(Cliente, d.get('cliente_id')); t=TipoCredito[d.get('tipo')]
+    cta = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
+    if not cta: return jsonify({"error": "Cuenta destino inválida"}), 400
+    m = float(d.get('monto'))
+    db.session.add(Credito(tipo_credito=t, monto_aprobado=m, saldo_pendiente=m, tasa_interes_anual=0.25, plazo_meses=d.get('plazo'), cliente_id=c.id))
+    cta.saldo += m; db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=cta.id))
+    db.session.commit(); return jsonify({"success":True, "mensaje":"Creado"})
+
+@app.route('/cajero/solicitar_tarjeta', methods=['POST'])
+@cajero_login_required
+def cajero_crear_tarjeta():
+    d=request.json; c=db.session.get(Cliente, d.get('cliente_id'))
+    num = f"4500{random.randint(1000,9999)}{random.randint(1000,9999)}{random.randint(1000,9999)}"
+    db.session.add(TarjetaCredito(numero_tarjeta=num, cupo_total=d.get('cupo'), tasa_interes_mensual=0.029, cliente_id=c.id))
+    db.session.commit(); return jsonify({"success":True, "mensaje":"Creada"})
+
+@app.route('/cajero/abrir_cdt', methods=['POST'])
+@cajero_login_required
+def cajero_abrir_cdt():
+    d=request.json; co=db.session.get(CuentaAhorros, d.get('id_cuenta_origen')); m=float(d.get('monto'))
+    if co.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400
+    co.saldo -= m
+    cdt = CDT(monto_inversion=m, plazo_dias=d.get('plazo'), tasa_interes_anual=0.12, fecha_creacion=datetime.date.today(), fecha_vencimiento=datetime.date.today()+datetime.timedelta(days=int(d.get('plazo'))), cliente_id=d.get('cliente_id'))
+    db.session.add(co); db.session.add(cdt); db.session.commit()
+    return jsonify({"success":True, "mensaje":"CDT Abierto"})
+
+@app.route('/cajero/realizar_consignacion', methods=['POST'])
+@cajero_login_required
+def cajero_consignar():
+    d=request.json; c=db.session.get(CuentaAhorros, d.get('id_cuenta')); m=float(d.get('monto'))
+    c.saldo += m; db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id))
+    db.session.commit(); log_action_lifo(f"Cajero consignó ${m}"); return jsonify({"mensaje": "Exito"})
+
+@app.route('/cajero/realizar_retiro', methods=['POST'])
+@cajero_login_required
+def cajero_retirar():
+    d=request.json; c=db.session.get(CuentaAhorros, d.get('id_cuenta')); m=float(d.get('monto'))
+    ok, msg, imp = ejecutar_retiro(c, m) 
+    if not ok: return jsonify({"error": msg}), 400
+    db.session.commit(); log_action_lifo(f"Cajero retiró ${m}"); return jsonify({"mensaje": "Exito"})
+
+@app.route('/cajero/afiliar_cliente', methods=['POST'])
+@cajero_login_required
+def afiliar_cliente_cajero():
+    d=request.json
+    try:
+        hashed = generate_password_hash(d.get('password') or "1234")
+        fecha_nac = datetime.date.fromisoformat(d['fecha_nacimiento'])
+        nuevo = Cliente(nombre_completo=d['nombre_completo'], email=d['email'], password_hash=hashed, fecha_nacimiento=fecha_nac, tiene_discapacidad=False, tipo_cliente=TipoCliente.AFILIADO)
+        db.session.add(nuevo); db.session.commit()
+        return jsonify({"mensaje": "Cliente afiliado", "id_cliente": nuevo.id})
+    except Exception as e: return jsonify({"error": str(e)}), 400
+
+@app.route('/cajero/cancelar_cuenta', methods=['POST'])
+@cajero_login_required
+def cancelar_cuenta_cajero():
+    c = db.session.get(CuentaAhorros, request.json.get('id_cuenta'))
+    if c.saldo > 0 and c.saldo < 50: c.saldo = 0
+    if c.saldo > 0: return jsonify({"error": "Saldo debe ser 0"}), 400
+    db.session.query(Transaccion).filter(Transaccion.cuenta_id == c.id).delete(); db.session.delete(c); db.session.commit()
+    return jsonify({"mensaje": "Cancelada"})
+
+@app.route('/cajero/eliminar_tarjeta', methods=['POST'])
+@cajero_login_required
+def cancelar_tarjeta_cajero():
+    t = db.session.get(TarjetaCredito, request.json.get('id_tarjeta'))
+    if t.cupo_usado > 100: return jsonify({"error": "Deuda pendiente"}), 400
+    db.session.delete(t); db.session.commit()
+    return jsonify({"mensaje": "Eliminada"})
+
 @app.route('/cajero/transferir', methods=['POST'])
 @cajero_login_required
 def cajero_transferir():
     d = request.json; org = db.session.get(CuentaAhorros, d.get('id_cuenta_origen')); dest = db.session.get(CuentaAhorros, d.get('id_cuenta_destino'))
     if not org or not dest: return jsonify({"error": "Cuentas inválidas"}), 404
     m = float(d.get('monto'))
-    ok, msg, imp = ejecutar_retiro(org, m)
-    if not ok: return jsonify({"error": msg}), 400
-    dest.saldo += m; db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=dest.id))
-    db.session.commit(); log_action_lifo(f"Cajero transfirió ${m} de {org.numero_cuenta} a {dest.numero_cuenta}")
-    return jsonify({"success": True, "mensaje": "Transferencia exitosa"})
+    if org.saldo < m: return jsonify({"error": "Fondos insuficientes"}), 400 
+    org.saldo -= m; dest.saldo += m
+    db.session.add(Transaccion(tipo=TipoTransaccion.RETIRO, monto=m, cuenta_id=org.id))
+    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=dest.id))
+    db.session.commit(); log_action_lifo(f"Cajero transfirió ${m}"); return jsonify({"success": True, "mensaje": "Transferencia exitosa"})
 
 @app.route('/cajero/pagar_credito', methods=['POST'])
 @cajero_login_required
@@ -353,80 +472,33 @@ def cajero_realizar_avance():
     m = float(d.get('monto'))
     if (t.cupo_total - t.cupo_usado) < m: return jsonify({"error": "Cupo insuficiente"}), 400
     t.cupo_usado += m; c.saldo += m
-    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id))
-    db.session.commit(); log_action_lifo(f"Cajero hizo avance ${m} a {c.numero_cuenta}")
+    db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id)); db.session.commit()
     return jsonify({"success": True, "mensaje": "Avance exitoso"})
 
-# Rutas básicas cajero
-@app.route('/cajero/realizar_consignacion', methods=['POST'])
+# --- CORRECCION MARCAR EXENTA CAJERO ---
+@app.route('/cajero/marcar_exenta', methods=['POST'])
 @cajero_login_required
-def cajero_consignar():
-    d=request.json; c=db.session.get(CuentaAhorros, d.get('id_cuenta')); m=float(d.get('monto'))
-    c.saldo+=m; db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id))
-    db.session.commit(); log_action_lifo(f"Cajero consignó ${m}"); return jsonify({"mensaje": "Exito"})
-
-@app.route('/cajero/realizar_retiro', methods=['POST'])
-@cajero_login_required
-def cajero_retirar():
-    d=request.json; c=db.session.get(CuentaAhorros, d.get('id_cuenta')); m=float(d.get('monto'))
-    ok, msg, imp = ejecutar_retiro(c, m) # Cajero retira DE la cuenta del cliente (aplica 4x1000 si es débito de cuenta)
-    if not ok: return jsonify({"error": msg}), 400
-    db.session.commit(); log_action_lifo(f"Cajero retiró ${m}"); return jsonify({"mensaje": "Exito"})
-
-@app.route('/cajero/crear_cuenta', methods=['POST'])
-@cajero_login_required
-def cajero_crear_cuenta():
-    d=request.json; c=db.session.get(Cliente, d.get('cliente_id'))
-    num = f"410-{random.randint(100000, 999999)}-{c.id}"
-    db.session.add(CuentaAhorros(numero_cuenta=num, saldo=0.0, cliente_id=c.id)); db.session.commit()
-    return jsonify({"success":True, "mensaje":"Creada"})
-
-@app.route('/cajero/solicitar_credito', methods=['POST'])
-@cajero_login_required
-def cajero_crear_credito():
-    d=request.json; c=db.session.get(Cliente, d.get('cliente_id')); t=TipoCredito[d.get('tipo')]
-    db.session.add(Credito(tipo_credito=t, monto_aprobado=d.get('monto'), saldo_pendiente=d.get('monto'), tasa_interes_anual=0.25, plazo_meses=d.get('plazo'), cliente_id=c.id))
-    db.session.commit(); return jsonify({"success":True, "mensaje":"Creado"})
-
-@app.route('/cajero/solicitar_tarjeta', methods=['POST'])
-@cajero_login_required
-def cajero_crear_tarjeta():
-    d=request.json; c=db.session.get(Cliente, d.get('cliente_id'))
-    num = f"4500{random.randint(1000,9999)}{random.randint(1000,9999)}{random.randint(1000,9999)}"
-    db.session.add(TarjetaCredito(numero_tarjeta=num, cupo_total=d.get('cupo'), tasa_interes_mensual=0.029, cliente_id=c.id))
-    db.session.commit(); return jsonify({"success":True, "mensaje":"Creada"})
-
-@app.route('/cajero/abrir_cdt', methods=['POST'])
-@cajero_login_required
-def cajero_abrir_cdt():
-    d=request.json; co=db.session.get(CuentaAhorros, d.get('id_cuenta_origen')); m=float(d.get('monto'))
-    ok, msg, imp = ejecutar_retiro(co, m)
-    if not ok: return jsonify({"error": msg}), 400
-    cdt = CDT(monto_inversion=m, plazo_dias=d.get('plazo'), tasa_interes_anual=0.12, fecha_creacion=datetime.date.today(), fecha_vencimiento=datetime.date.today()+datetime.timedelta(days=int(d.get('plazo'))), cliente_id=d.get('cliente_id'))
-    db.session.add(cdt); db.session.commit()
-    return jsonify({"success":True, "mensaje":"CDT Abierto"})
-
-@app.route('/cajero/afiliar_cliente', methods=['POST'])
-@cajero_login_required
-def afiliar_cliente_cajero():
-    d=request.json; nuevo = Cliente(nombre_completo=d['nombre_completo'], email=d['email'], fecha_nacimiento=datetime.date.fromisoformat(d['fecha_nacimiento']), tiene_discapacidad=False, tipo_cliente=TipoCliente.AFILIADO, password_hash="")
-    db.session.add(nuevo); db.session.commit(); return jsonify({"mensaje": "Afiliado"})
-
-@app.route('/cajero/consignar_tercero', methods=['POST'])
-@cajero_login_required
-def cajero_consignar_tercero():
-    d=request.json; c=db.session.scalar(db.select(CuentaAhorros).where(CuentaAhorros.numero_cuenta==d.get('numero_cuenta')))
-    if not c: return jsonify({"error": "No existe cuenta"}), 404
-    c.saldo += float(d.get('monto')); db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=float(d.get('monto')), cuenta_id=c.id))
-    db.session.commit(); return jsonify({"mensaje": "Exito"})
-
-@app.route('/cajero/cancelar_cuenta', methods=['POST'])
-@cajero_login_required
-def cancelar_cuenta_cajero():
+def cajero_marcar_exenta():
     c = db.session.get(CuentaAhorros, request.json.get('id_cuenta'))
-    if c.saldo > 0: return jsonify({"error": "Saldo debe ser 0"}), 400
-    db.session.query(Transaccion).filter(Transaccion.cuenta_id == c.id).delete(); db.session.delete(c); db.session.commit()
-    return jsonify({"mensaje": "Cancelada"})
+    if not c: return jsonify({"error": "Cuenta inválida"}), 404
+    cliente = c.cliente
+    for cuenta in cliente.cuentas_ahorros: cuenta.exenta_4x1000 = False
+    c.exenta_4x1000 = True; db.session.commit()
+    return jsonify({"success": True, "mensaje": "Cuenta marcada como exenta"})
+
+@app.route('/cajero/cuenta/<int:id_cuenta>/transacciones', methods=['GET'])
+@cajero_login_required
+def cajero_get_transacciones(id_cuenta):
+    c = db.session.get(CuentaAhorros, id_cuenta)
+    trans = db.session.scalars(db.select(Transaccion).where(Transaccion.cuenta_id==id_cuenta).order_by(Transaccion.fecha.desc())).all()
+    return jsonify([{"tipo": t.tipo.value, "monto": t.monto, "fecha": t.fecha.strftime("%Y-%m-%d %H:%M")} for t in trans])
+
+@app.route('/cajero/credito/<int:id_credito>/amortizacion', methods=['GET'])
+@cajero_login_required
+def cajero_get_amortizacion(id_credito):
+    cred = db.session.get(Credito, id_credito)
+    cuota, tabla = calcular_tabla_amortizacion(cred.monto_aprobado, cred.tasa_interes_anual, cred.plazo_meses)
+    return jsonify({"cuota_fija_mensual": round(cuota, 2), "tabla_amortizacion": tabla})
 
 @app.route('/cajero/historial/ver', methods=['GET'])
 @cajero_login_required

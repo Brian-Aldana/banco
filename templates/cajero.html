@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Cajero - Banco Ucundinamarca</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -12,7 +11,6 @@
             <h1>Panel de Cajero</h1>
             <button id="logout-button" class="btn btn-rojo">Cerrar Sesión</button>
         </div>
-
         <div class="layout-cajero">
             <aside>
                 <div class="card">
@@ -22,35 +20,23 @@
                     <div id="turno-actual-nombre" style="text-align: center; margin-bottom: 20px; color: #555;">(Esperando...)</div>
                     <button id="btn-llamar-siguiente" class="btn btn-cajero" style="width: 100%;">Llamar Siguiente</button>
                 </div>
-                <div class="card" style="margin-top: 20px;">
-                    <h4>En Espera</h4>
-                    <ul id="lista-preferencial" style="padding-left: 20px;">Pref: 0</ul>
-                    <ul id="lista-afiliado" style="padding-left: 20px;">Afil: 0</ul>
-                    <ul id="lista-no_afiliado" style="padding-left: 20px;">No Afil: 0</ul>
-                </div>
-                <div class="card" style="margin-top: 20px;">
-                    <h4>Historial (LIFO)</h4>
-                    <ul id="historial-lifo" style="font-size: 0.8rem; padding-left: 15px; max-height: 200px; overflow-y: auto;"></ul>
-                </div>
+                <div class="card" style="margin-top: 20px;"><h4>En Espera</h4><ul id="lista-preferencial">Pref: 0</ul><ul id="lista-afiliado">Afil: 0</ul><ul id="lista-no_afiliado">No Afil: 0</ul></div>
+                <div class="card" style="margin-top: 20px;"><h4>Historial (LIFO)</h4><ul id="historial-lifo" style="max-height: 200px; overflow-y: auto;"></ul></div>
             </aside>
             <main>
                 <div class="card">
                     <form id="form-buscar-cliente" style="display: flex; gap: 10px;">
-                        <input type="text" id="search_term" class="form-control" placeholder="Cédula o Email del cliente...">
+                        <input type="text" id="search_term" class="form-control" placeholder="Cédula o Email...">
                         <button type="submit" class="btn btn-secondary">Buscar</button>
                     </form>
                 </div>
                 <div id="cliente-info" style="display: none;">
                     <div class="card" style="margin-top: 20px; border-top: 5px solid #d81b60;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h2 id="cliente-nombre" style="margin: 0;">Nombre Cliente</h2>
-                                <p id="cliente-email" style="margin: 5px 0;">email@cliente.com</p>
-                                <span id="cliente-tipo" style="background: #e0d7f5; padding: 3px 8px; border-radius: 4px; font-size: 0.9rem;">Afiliado</span>
-                            </div>
+                            <div><h2 id="cliente-nombre"></h2><p id="cliente-email"></p><span id="cliente-tipo" style="background: #e0d7f5; padding: 3px 8px; border-radius: 4px;"></span></div>
                             <button id="btn-limpiar-cliente" class="btn btn-cancelar">Limpiar</button>
                         </div>
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                        <hr style="margin: 20px 0;">
                         <div id="opciones-no-afiliado" style="display:none;">
                             <h3>Opciones de Visitante</h3>
                             <div style="display:flex; gap:10px;">
@@ -59,10 +45,8 @@
                             </div>
                         </div>
                         <div id="panel-productos">
-                            <div id="area-afiliar" style="display:none; text-align:center; margin: 20px 0;">
-                                <button id="btn-afiliar-cliente" class="btn btn-verde">Afiliar Cliente Ahora</button>
-                            </div>
-                            <div class="section-header" style="margin-top: 20px;"><h3>Cuentas de Ahorro</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('cuenta')">+ Crear</button></div>
+                            <div id="area-afiliar" style="display:none; text-align:center; margin: 20px 0;"><button id="btn-afiliar-cliente" class="btn btn-verde">Afiliar Cliente Ahora</button></div>
+                            <div class="section-header" style="margin-top: 20px;"><h3>Cuentas</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('cuenta')">+ Crear</button></div>
                             <div id="cuentas-container"></div>
                             <div class="section-header" style="margin-top: 20px;"><h3>Créditos</h3><button class="btn btn-secondary btn-small" onclick="abrirModalCrear('credito')">+ Nuevo</button></div>
                             <div id="creditos-container"></div>
@@ -79,12 +63,18 @@
     
     <div id="cajero-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2 id="modal-title">Operación</h2>
+            <span class="close-modal">&times;</span><h2 id="modal-title">Operación</h2>
             <div id="modal-body">
-                <form id="form-crear-credito" style="display:none;"><div class="form-group"><label>Monto:</label><input type="number" id="crear-credito-monto" class="form-control"></div><div class="form-group"><label>Plazo:</label><input type="number" id="crear-credito-plazo" class="form-control"></div><div class="form-group"><label>Tipo:</label><select id="crear-credito-tipo" class="form-control"><option value="LIBRE_INVERSION">Libre Inversión</option><option value="CARTERA">Cartera</option></select></div><button type="submit" class="btn" style="width:100%">Crear</button></form>
-                <form id="form-crear-tarjeta" style="display:none;"><div class="form-group"><label>Cupo Inicial:</label><input type="number" id="crear-tarjeta-cupo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Asignar</button></form>
-                <form id="form-crear-cdt" style="display:none;"><div class="form-group"><label>Cuenta Origen:</label><select id="crear-cdt-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="crear-cdt-monto" class="form-control"></div><div class="form-group"><label>Plazo:</label><input type="number" id="crear-cdt-plazo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Abrir CDT</button></form>
+                <form id="form-crear-credito" style="display:none;">
+                    <div class="form-group"><label>Cuenta Desembolso:</label><select id="crear-credito-destino" class="form-control"></select></div>
+                    <div class="form-group"><label>Monto:</label><input type="number" id="crear-credito-monto" class="form-control"></div>
+                    <div class="form-group"><label>Plazo:</label><input type="number" id="crear-credito-plazo" class="form-control"></div>
+                    <div class="form-group"><label>Tipo:</label><select id="crear-credito-tipo" class="form-control"><option value="LIBRE_INVERSION">Libre</option><option value="CARTERA">Cartera</option></select></div>
+                    <button type="submit" class="btn" style="width:100%">Crear</button>
+                </form>
+                <form id="form-crear-tarjeta" style="display:none;"><div class="form-group"><label>Cupo:</label><input type="number" id="crear-tarjeta-cupo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Asignar</button></form>
+                <form id="form-crear-cdt" style="display:none;"><div class="form-group"><label>Cuenta Origen:</label><select id="crear-cdt-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="crear-cdt-monto" class="form-control"></div><div class="form-group"><label>Plazo:</label><input type="number" id="crear-cdt-plazo" class="form-control"></div><button type="submit" class="btn" style="width:100%">Abrir</button></form>
+                <form id="form-registrar-cliente" style="display:none;"><div class="form-group"><label>Nombre:</label><input type="text" id="reg-nombre" class="form-control" required></div><div class="form-group"><label>Email:</label><input type="email" id="reg-email" class="form-control" required></div><div class="form-group"><label>Fecha Nac:</label><input type="date" id="reg-fecha" class="form-control" required></div><input type="hidden" id="reg-pass" value="1234"><button type="submit" class="btn" style="width:100%">Registrar</button></form>
                 <form id="form-transferir-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="trans-origen" class="form-control"></select></div><div class="form-group"><label>Destino:</label><select id="trans-destino" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="trans-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Transferir</button></form>
                 <form id="form-pagar-credito-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="pagar-credito-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="pagar-credito-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Pagar</button></form>
                 <form id="form-pagar-tarjeta-cajero" style="display:none;"><div class="form-group"><label>Origen:</label><select id="pagar-tarjeta-origen" class="form-control"></select></div><div class="form-group"><label>Monto:</label><input type="number" id="pagar-tarjeta-monto" class="form-control"></div><button type="submit" class="btn" style="width:100%">Pagar</button></form>
@@ -92,6 +82,8 @@
             </div>
         </div>
     </div>
+    <div id="modal-transacciones" class="modal"><div class="modal-content"><span class="close-modal" id="close-transacciones-btn">&times;</span><h2 id="transacciones-title">Movimientos</h2><ul id="transaccion-lista"></ul></div></div>
+    <div id="modal-amortizacion" class="modal"><div class="modal-content"><span class="close-modal" id="close-amortizacion-btn">&times;</span><h2>Amortización</h2><h3 id="cuota-fija-display"></h3><div style="overflow-x:auto"><table id="tabla-amortizacion"><thead><tr><th>Mes</th><th>Cuota</th><th>Int</th><th>Cap</th><th>Saldo</th></tr></thead><tbody id="tabla-amortizacion-body"></tbody></table></div></div></div>
     <script src="{{ url_for('static', filename='js/cajero.js') }}"></script>
 </body>
 </html>
