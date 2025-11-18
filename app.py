@@ -232,7 +232,7 @@ def eliminar_tarjeta():
     db.session.delete(t); db.session.commit()
     return jsonify({"success": True, "mensaje": "Tarjeta eliminada"})
 
-# --- CORRECCION MARCAR EXENTA CLIENTE ---
+# --- MARCAR EXENTA CLIENTE ---
 @app.route('/cliente/marcar_exenta', methods=['POST'])
 @login_required
 def marcar_exenta():
@@ -475,7 +475,7 @@ def cajero_realizar_avance():
     db.session.add(Transaccion(tipo=TipoTransaccion.CONSIGNACION, monto=m, cuenta_id=c.id)); db.session.commit()
     return jsonify({"success": True, "mensaje": "Avance exitoso"})
 
-# --- CORRECCION MARCAR EXENTA CAJERO ---
+# --- MARCAR EXENTA CAJERO ---
 @app.route('/cajero/marcar_exenta', methods=['POST'])
 @cajero_login_required
 def cajero_marcar_exenta():
