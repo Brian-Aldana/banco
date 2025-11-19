@@ -4,22 +4,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const creditosContainer = document.getElementById('creditos-container');
     const tarjetasContainer = document.getElementById('tarjetas-container');
     const cdtsContainer = document.getElementById('cdts-container');
+    
     const modalForm = document.getElementById('form-modal');
     const modalTrans = document.getElementById('modal-transacciones');
     const modalAmort = document.getElementById('modal-amortizacion');
     const modalRetiro = document.getElementById('modal-retiro');
-    let misCuentas = [], misTarjetas = [];
+    
+    let misCuentas = [];
+    let misTarjetas = [];
 
     async function cargarData() {
         const res = await fetch(`/cliente/perfil?t=${new Date().getTime()}`);
         if (res.status === 401) return window.location.href = '/login';
         const data = await res.json();
+        
         welcomeMessage.textContent = `Hola, ${data.nombre}`;
         misCuentas = data.cuentas_ahorros; misTarjetas = data.tarjetas_credito;
+        
         renderCuentas(data.cuentas_ahorros);
         renderCreditos(data.creditos);
         renderTarjetas(data.tarjetas_credito);
         renderCDTs(data.cdts);
+        
         if(data.tipo_cliente === 'Afiliado') {
              document.getElementById('afiliacion-section').style.display = 'none';
              document.getElementById('status-display').textContent = 'AFILIADO';
@@ -42,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="saldo">$${formatCurrency(c.saldo)}</div>
                 <div class="numero-cuenta">Cuenta ${c.numero_cuenta} ${c.exenta_4x1000 ? '<span class="exenta-badge">Exenta</span>' : ''}</div>
                 <div class="operacion-item">
-                    <input type="number" id="monto-c-${c.id}" class="form-control" placeholder="Monto">
+                    <input type="number" id="monto-c-${c.id}" class="form-control" placeholder="Monto a consignar">
                     <button class="btn btn-verde btn-small" onclick="consignarDirecto(${c.id})">Meter</button>
                 </div>
                 <div class="card-acciones">
@@ -58,10 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
         creditosContainer.innerHTML = '';
         if(list.length === 0) creditosContainer.innerHTML = '<p>No tienes créditos.</p>';
         list.forEach(c => {
+            // --- CORRECCIÓN: Mostrar Tasa ---
             creditosContainer.innerHTML += `
             <div class="card producto-card">
                 <h4>${c.tipo_credito}</h4>
-                <p>Deuda: $${formatCurrency(c.saldo_pendiente)}</p>
+                <p>Deuda: <strong>$${formatCurrency(c.saldo_pendiente)}</strong></p>
+                <p style="font-size:0.9rem; color:#666;">Tasa: ${(c.tasa_interes_anual * 100).toFixed(2)}% E.A.</p>
                 <div class="card-acciones">
                     <button class="btn btn-verde btn-small" onclick="abrirModalPagarCredito(${c.id}, ${c.saldo_pendiente})">Abonar</button>
                     <button class="btn btn-secondary btn-small" onclick="verAmortizacion(${c.id})">Amortización</button>
@@ -79,10 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let btnPagar = usadoReal > 0 
                 ? `<button class="btn btn-verde btn-small" onclick="abrirModalPagarTarjeta(${t.id}, ${usadoReal})">Pagar Tarjeta</button>`
                 : `<span style="color:green; font-weight:bold; font-size:0.9rem;">¡Estás al día!</span> <button class="btn btn-cancelar btn-small" onclick="eliminarTarjeta(${t.id})">Eliminar</button>`;
+            
             tarjetasContainer.innerHTML += `
             <div class="card producto-card">
                 <h4>Tarjeta ${t.numero_tarjeta}</h4>
                 <p>Usado: $${formatCurrency(usadoReal)} / $${formatCurrency(t.cupo_total)}</p>
+                <p style="font-size:0.9rem; color:#666;">Tasa Mes: ${(t.tasa_interes_mensual * 100).toFixed(2)}%</p>
                 <div class="card-acciones">
                     ${btnPagar}
                     <button class="btn btn-info btn-small" onclick="abrirModalAvance(${t.id}, ${disp})">Avance</button>
@@ -95,15 +105,23 @@ document.addEventListener('DOMContentLoaded', () => {
         cdtsContainer.innerHTML = '';
         if(list.length === 0) cdtsContainer.innerHTML = '<p>No tienes CDTs.</p>';
         list.forEach(c => {
-            cdtsContainer.innerHTML += `<div class="card producto-card"><h4>CDT</h4><p>Inversión: $${formatCurrency(c.monto_inversion)}</p></div>`;
+            cdtsContainer.innerHTML += `
+            <div class="card producto-card">
+                <h4>CDT</h4>
+                <p>Inversión: <strong>$${formatCurrency(c.monto_inversion)}</strong></p>
+                <p style="font-size:0.9rem; color:#666;">Plazo: ${c.plazo_dias} días | Tasa: ${(c.tasa_interes_anual * 100).toFixed(2)}% E.A.</p>
+            </div>`;
         });
     }
 
+    // --- Funciones de Operación ---
     window.consignarDirecto = async (id) => {
         const monto = document.getElementById(`monto-c-${id}`).value;
         if(!monto) return alert("Monto requerido");
         const res = await fetch('/cliente/consignar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id, monto: parseFloat(monto)})});
-        const data = await res.json(); alert(data.mensaje || data.error); if(res.ok) cargarData();
+        const data = await res.json();
+        alert(data.mensaje || data.error);
+        if(res.ok) cargarData();
     }
     window.abrirModalRetiro = () => {
         const sel = document.getElementById('retiro-cuenta-origen'); sel.innerHTML = '';
@@ -115,31 +133,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('retiro-cuenta-origen').value; const monto = document.getElementById('retiro-monto').value;
         if(!monto || parseFloat(monto)<=0) { document.getElementById('retiro-error-msg').textContent = "Monto inválido"; document.getElementById('retiro-error-msg').style.display = 'block'; return; }
         const res = await fetch('/cliente/retirar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id, monto: parseFloat(monto)})});
-        const data = await res.json(); if(res.ok) { alert(data.mensaje); modalRetiro.style.display='none'; cargarData(); } else { document.getElementById('retiro-error-msg').textContent = data.error; document.getElementById('retiro-error-msg').style.display = 'block'; }
+        const data = await res.json();
+        if(res.ok) { alert(data.mensaje); modalRetiro.style.display='none'; cargarData(); } else { document.getElementById('retiro-error-msg').textContent = data.error; document.getElementById('retiro-error-msg').style.display = 'block'; }
     }
     window.eliminarCuenta = async (id) => { if(confirm("¿Seguro?")) { const res = await fetch('/cliente/eliminar_cuenta', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id})}); const data = await res.json(); alert(data.mensaje || data.error); if(res.ok) cargarData(); } };
     window.eliminarTarjeta = async (id) => { if(confirm("¿Seguro?")) { const res = await fetch('/cliente/eliminar_tarjeta', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_tarjeta: id})}); const data = await res.json(); alert(data.mensaje || data.error); if(res.ok) cargarData(); } };
     window.marcarExenta = async (id) => { const res = await fetch('/cliente/marcar_exenta', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id_cuenta: id})}); if(res.ok) { alert("Cuenta marcada exenta"); cargarData(); } };
+
     window.verMovimientos = async (id, num) => {
         const res = await fetch(`/cliente/cuenta/${id}/transacciones`);
         const data = await res.json();
         const lista = document.getElementById('transaccion-lista');
         document.getElementById('transacciones-title').textContent = `Movimientos ${num}`;
         lista.innerHTML = '';
-        if(data.length===0) lista.innerHTML = '<li>Sin movimientos</li>';
+        if(data.length===0) lista.innerHTML = '<li style="text-align:center; padding:20px;">Sin movimientos</li>';
         data.forEach(t => {
             const esDebito = (t.tipo === 'Retiro' || t.tipo === 'Pago'); const tipoTexto = t.tipo === 'Pago' ? 'Impuesto 4x1000' : t.tipo;
             const color = esDebito ? '#e53935' : '#43a047'; const signo = esDebito ? '-' : '+';
-            lista.innerHTML += `<li><div><strong>${tipoTexto}</strong><br><small>${t.fecha}</small></div><span style="color:${color};font-weight:bold">${signo}$${formatCurrency(t.monto)}</span></li>`;
+            lista.innerHTML += `<li><div><strong style="font-size:1.1rem;">${tipoTexto}</strong><br><small style="color:#888;">${t.fecha}</small></div><span style="color:${color};font-weight:bold;font-size:1.1rem;">${signo}$${formatCurrency(t.monto)}</span></li>`;
         });
         modalTrans.style.display = 'block';
     };
+    
     window.verAmortizacion = async (id) => {
         const res = await fetch(`/cliente/credito/${id}/amortizacion`);
         const data = await res.json();
         document.getElementById('cuota-fija-display').textContent = `Cuota: $${formatCurrency(data.cuota_fija_mensual)}`;
         const tbody = document.getElementById('tabla-amortizacion-body'); tbody.innerHTML = '';
-        data.tabla_amortizacion.forEach(f => { tbody.innerHTML += `<tr><td>${f.mes}</td><td>$${formatCurrency(f.cuota)}</td><td>$${formatCurrency(f.interes)}</td><td>$${formatCurrency(f.capital)}</td><td>$${formatCurrency(f.saldo_restante)}</td></tr>`; });
+        data.tabla_amortizacion.forEach(f => {
+             tbody.innerHTML += `<tr><td>${f.mes}</td><td>$${formatCurrency(f.cuota)}</td><td>$${formatCurrency(f.interes)}</td><td>$${formatCurrency(f.capital)}</td><td>$${formatCurrency(f.saldo_restante)}</td></tr>`;
+        });
         modalAmort.style.display = 'block';
     };
 
@@ -151,10 +174,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('modal-submit-btn');
 
         if(tipo === 'cuenta') { modal.style.display = 'none'; if(confirm("Crear cuenta nueva?")) fetch('/cliente/crear_cuenta_ahorros', {method:'POST'}).then(()=>cargarData()); }
-        else if (tipo === 'transferir') { if(!poblar('transfer-cuenta-origen') || !poblar('transfer-cuenta-destino')) return alert("Necesitas cuentas"); document.getElementById('form-transferir').style.display='block'; btn.onclick = async () => { const res = await fetch('/cliente/transferir', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_cuenta_origen: document.getElementById('transfer-cuenta-origen').value, id_cuenta_destino: document.getElementById('transfer-cuenta-destino').value, monto: parseFloat(document.getElementById('transfer-monto').value)})}); const d = await res.json(); alert(d.mensaje||d.error); if(res.ok){modal.style.display='none'; cargarData();} }; }
-        else if(tipo==='credito') { if(!poblar('credito-cuenta-destino')) return alert("Necesitas una cuenta para el desembolso"); document.getElementById('form-credito').style.display='block'; btn.onclick = async () => { const res = await fetch('/cliente/solicitar_credito', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monto: parseFloat(document.getElementById('credito-monto').value), plazo: parseInt(document.getElementById('credito-plazo').value), tipo: document.getElementById('credito-tipo').value, id_cuenta_destino: document.getElementById('credito-cuenta-destino').value})}); if(res.ok){modal.style.display='none'; cargarData(); alert("Solicitado");} }; }
-        else if(tipo==='tarjeta') { document.getElementById('form-tarjeta').style.display='block'; btn.onclick = async () => { await fetch('/cliente/solicitar_tarjeta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cupo_solicitado: parseFloat(document.getElementById('tarjeta-cupo').value)})}); modal.style.display='none'; cargarData(); }; }
-        else if(tipo==='cdt') { if(!poblar('cdt-cuenta-origen')) return alert("Necesitas una cuenta"); document.getElementById('form-cdt').style.display='block'; btn.onclick = async () => { const res = await fetch('/cliente/abrir_cdt', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monto: parseFloat(document.getElementById('cdt-monto').value), plazo_dias: parseInt(document.getElementById('cdt-plazo').value), id_cuenta_origen: document.getElementById('cdt-cuenta-origen').value})}); const d = await res.json(); alert(d.mensaje||d.error); if(res.ok){modal.style.display='none'; cargarData();} }; }
+        else if (tipo === 'transferir') {
+            if(!poblar('transfer-cuenta-origen') || !poblar('transfer-cuenta-destino')) return alert("Necesitas cuentas");
+            document.getElementById('form-transferir').style.display='block';
+            btn.onclick = async () => {
+                const res = await fetch('/cliente/transferir', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_cuenta_origen: document.getElementById('transfer-cuenta-origen').value, id_cuenta_destino: document.getElementById('transfer-cuenta-destino').value, monto: parseFloat(document.getElementById('transfer-monto').value)})});
+                const d = await res.json(); alert(d.mensaje||d.error); if(res.ok){modal.style.display='none'; cargarData();}
+            };
+        } else if(tipo==='credito') {
+            if(!poblar('credito-cuenta-destino')) return alert("Necesitas una cuenta para el desembolso");
+            document.getElementById('form-credito').style.display='block';
+            btn.onclick = async () => {
+                 const res = await fetch('/cliente/solicitar_credito', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monto: parseFloat(document.getElementById('credito-monto').value), plazo: parseInt(document.getElementById('credito-plazo').value), tipo: document.getElementById('credito-tipo').value, id_cuenta_destino: document.getElementById('credito-cuenta-destino').value})});
+                if(res.ok){modal.style.display='none'; cargarData(); alert("Solicitado");}
+            };
+        } else if(tipo==='tarjeta') {
+             document.getElementById('form-tarjeta').style.display='block';
+             btn.onclick = async () => { await fetch('/cliente/solicitar_tarjeta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cupo_solicitado: parseFloat(document.getElementById('tarjeta-cupo').value)})}); modal.style.display='none'; cargarData(); };
+        } else if(tipo==='cdt') {
+            if(!poblar('cdt-cuenta-origen')) return alert("Necesitas una cuenta");
+            document.getElementById('form-cdt').style.display='block';
+            btn.onclick = async () => { const res = await fetch('/cliente/abrir_cdt', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monto: parseFloat(document.getElementById('cdt-monto').value), plazo: parseInt(document.getElementById('cdt-plazo').value), id_cuenta_origen: document.getElementById('cdt-cuenta-origen').value})}); const d = await res.json(); alert(d.mensaje||d.error); if(res.ok){modal.style.display='none'; cargarData();} };
+        }
     };
 
     window.abrirModalPagarCredito = (id, deuda) => {
@@ -172,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const poblar = (ids) => { const s=document.getElementById(ids); s.innerHTML=''; misCuentas.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.numero_cuenta} ($${formatCurrency(c.saldo)})</option>`); return misCuentas.length>0; };
         if(!poblar('pagar-tarjeta-cuenta-origen')) return alert("Necesitas una cuenta para pagar");
         document.querySelectorAll('#form-modal-body form').forEach(f => f.style.display='none');
-        modalForm.style.display='block';
+        document.getElementById('form-modal').style.display='block';
         document.getElementById('form-pagar-tarjeta').style.display='block';
         document.getElementById('pagar-tarjeta-info').textContent = `Deuda: $${formatCurrency(cupo)}`;
         document.getElementById('pagar-tarjeta-monto').value = cupo;
@@ -182,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const poblar = (ids) => { const s=document.getElementById(ids); s.innerHTML=''; misCuentas.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.numero_cuenta} ($${formatCurrency(c.saldo)})</option>`); return misCuentas.length>0; };
         if(!poblar('avance-cuenta-destino')) return alert("Necesitas una cuenta para recibir el avance");
         document.querySelectorAll('#form-modal-body form').forEach(f => f.style.display='none');
-        modalForm.style.display='block';
+        document.getElementById('form-modal').style.display='block';
         document.getElementById('form-avance').style.display='block';
         document.getElementById('avance-info').textContent = `Disponible: $${formatCurrency(disp)}`;
         document.getElementById('modal-submit-btn').onclick = async () => { const res = await fetch('/cliente/realizar_avance', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_tarjeta: id, id_cuenta_destino: document.getElementById('avance-cuenta-destino').value, monto: parseFloat(document.getElementById('avance-monto').value)})}); const d = await res.json(); alert(d.mensaje||d.error); if(res.ok){document.getElementById('form-modal').style.display='none'; cargarData();} };

@@ -1,337 +1,86 @@
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; background: linear-gradient(to bottom, #ead9f7, #e6d3f5, #e1cdf3); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; min-height: 100vh; display: flex; flex-direction: column; }
+h1 { font-size: 38px; font-weight: 800; margin-bottom: 10px; color: #6d25a8; text-align: center; }
+h2 { font-size: 24px; color: #5a4d67; margin-bottom: 15px; font-weight: 700; }
+h3, h4 { color: #6d25a8; margin-bottom: 10px; }
+.subtitle { font-size: 18px; color: #5a4d67; text-align: center; margin-bottom: 40px; }
+.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; }
 
-body {
-    margin: 0;
-    padding: 0;
-    /* El fondo degradado de tu archivo */
-    background: linear-gradient(to bottom, #ead9f7, #e6d3f5, #e1cdf3);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #333;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+/* Tarjetas */
+.card { background: white; border-radius: 18px; padding: 30px; box-shadow: 0 6px 25px rgba(170, 117, 200, 0.25); margin-bottom: 20px; transition: transform 0.3s ease; }
+.card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-bottom: 40px; }
+.menu-card { width: 300px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.menu-card:hover { transform: translateY(-8px); }
+.card-icon { font-size: 48px; background: #e8d7f7; color: #6d25a8; padding: 25px; border-radius: 50%; margin-bottom: 20px; display: inline-block; }
+.producto-card { border-left: 6px solid #7b1bda; padding: 20px; margin-bottom: 20px; }
+.producto-card .saldo { font-size: 2rem; font-weight: 800; color: #6d25a8; }
+.producto-card .numero-cuenta { color: #888; font-size: 0.9rem; }
 
-/* --- Tipografía y Títulos --- */
-h1 {
-    font-size: 38px;
-    font-weight: 800;
-    margin-bottom: 10px;
-    color: #6d25a8; /* Morado fuerte */
-    text-align: center;
-}
+/* Botones */
+.btn { background: linear-gradient(90deg, #7b1bda 0%, #b36bff 100%); color: white; border: none; padding: 10px 26px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 6px 18px rgba(123, 27, 218, 0.35); text-decoration: none; display: inline-block; text-align: center; }
+.btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(123, 27, 218, 0.45); }
+.btn-small { padding: 6px 15px; font-size: 14px; border-radius: 8px; }
+.btn-secondary { background: white; color: #7b1bda; border: 2px solid #7b1bda; box-shadow: none; }
+.btn-secondary:hover { background: #f3e5f5; }
+.btn-rojo, .btn-cancelar { background: linear-gradient(90deg, #e53935 0%, #ff6f60 100%); box-shadow: 0 6px 18px rgba(229, 57, 53, 0.35); }
+.btn-verde { background: linear-gradient(90deg, #43a047 0%, #76d275 100%); box-shadow: 0 6px 18px rgba(67, 160, 71, 0.35); }
+.btn-info { background: linear-gradient(90deg, #0288d1 0%, #4fc3f7 100%); box-shadow: 0 6px 18px rgba(2, 136, 209, 0.35); }
+.btn-pagar { background-color: #03A9F4; color: white; }
 
-h2 {
-    font-size: 24px;
-    color: #5a4d67;
-    margin-bottom: 15px;
-    font-weight: 700;
-}
+/* Grids */
+.layout-dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+.layout-cajero { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e1cdf3; flex-wrap: wrap; gap: 10px; }
 
-h3, h4 {
-    color: #6d25a8;
-    margin-bottom: 10px;
-}
+/* Formularios */
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #5a4d67; }
+.form-control { width: 100%; padding: 12px; border: 2px solid #e1cdf3; border-radius: 12px; font-size: 15px; background: #fdfbff; transition: border-color 0.3s; }
+.form-control:focus { outline: none; border-color: #7b1bda; background: white; }
+.operacion-item { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e1cdf3; flex-wrap: wrap; }
+.card-acciones { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; }
 
-.subtitle {
-    font-size: 18px;
-    color: #5a4d67;
-    text-align: center;
-    margin-bottom: 40px;
-}
+/* Modales */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(109, 37, 168, 0.4); backdrop-filter: blur(4px); overflow: auto; }
+.modal-content { background-color: #fff; margin: 5% auto; padding: 40px; border-radius: 24px; width: 90%; max-width: 700px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; animation: slideDown 0.3s ease-out; }
+@keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; right: 25px; top: 20px; }
 
-/* --- Contenedor Principal --- */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    flex: 1; /* Para que el footer se vaya al fondo */
-}
-
-/* --- Tarjetas (Cards) --- */
-.card {
-    background: white;
-    border-radius: 18px;
-    padding: 30px;
-    box-shadow: 0 6px 25px rgba(170, 117, 200, 0.25);
-    margin-bottom: 20px;
-    transition: transform 0.3s ease;
-}
-
-/* Contenedor de tarjetas para el menú inicio */
-.card-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-/* Tarjeta específica de menú (Inicio) */
-.menu-card {
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.menu-card:hover {
-    transform: translateY(-8px);
-}
-
-.card-icon {
-    font-size: 48px;
-    background: #e8d7f7; 
-    color: #6d25a8;
-    padding: 25px;
-    border-radius: 50%;
-    margin-bottom: 20px;
-    display: inline-block;
-}
-
-.card-title {
-    font-size: 22px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.card-desc {
-    font-size: 15px;
-    margin-bottom: 20px;
-    color: #666;
-}
-
-/* --- Botones (Estilo Degradado) --- */
-.btn {
-    background: linear-gradient(90deg, #7b1bda 0%, #b36bff 100%);
-    color: white;
-    border: none;
-    padding: 10px 26px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 18px rgba(123, 27, 218, 0.35);
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
-}
-
-.btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(123, 27, 218, 0.45);
-}
-
-/* Variantes de botones para acciones específicas */
-.btn-small {
-    padding: 6px 15px;
-    font-size: 14px;
-    border-radius: 8px;
-}
-
-.btn-secondary {
-    background: white;
-    color: #7b1bda;
-    border: 2px solid #7b1bda;
-    box-shadow: none;
-}
-.btn-secondary:hover {
-    background: #f3e5f5;
-    transform: scale(1.05);
-}
-
-.btn-rojo, .btn-cancelar {
-    background: linear-gradient(90deg, #e53935 0%, #ff6f60 100%);
-    box-shadow: 0 6px 18px rgba(229, 57, 53, 0.35);
-}
-.btn-rojo:hover, .btn-cancelar:hover {
-    box-shadow: 0 8px 25px rgba(229, 57, 53, 0.45);
-}
-
-.btn-verde {
-    background: linear-gradient(90deg, #43a047 0%, #76d275 100%);
-    box-shadow: 0 6px 18px rgba(67, 160, 71, 0.35);
-}
-
-.btn-info {
-    background: linear-gradient(90deg, #0288d1 0%, #4fc3f7 100%);
-    box-shadow: 0 6px 18px rgba(2, 136, 209, 0.35);
-}
-
-/* --- Layouts (Dashboard y Cajero) --- */
-.layout-dashboard {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 30px;
-}
-
-.layout-cajero {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 30px;
-}
-
-/* Header interno de secciones */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e1cdf3;
-}
-
-/* Cards de productos específicos */
-.producto-card {
-    border-left: 6px solid #7b1bda; /* Borde lateral morado */
-    padding: 20px;
-    margin-bottom: 20px;
-}
-.producto-card .saldo {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #6d25a8;
-}
-.producto-card .numero-cuenta {
-    color: #888;
-    font-size: 0.9rem;
-}
-
-/* --- Formularios --- */
-.form-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
+/* --- Tablas Mejoradas (Corrección Títulos Cortados) --- */
+.table-responsive { overflow-x: auto; border-radius: 10px; margin-top: 15px; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 500px; }
+th { 
+    background-color: #6d25a8; /* Morado oscuro para encabezado */
+    color: white; 
+    padding: 15px; 
+    text-align: center; 
+    white-space: nowrap; /* Evita que el texto se corte o baje */
     font-weight: 600;
-    color: #5a4d67;
+    letter-spacing: 0.5px;
 }
-
-.form-control {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e1cdf3;
-    border-radius: 12px;
-    font-size: 15px;
-    background: #fdfbff;
-    transition: border-color 0.3s;
+/* Bordes redondeados para la cabecera */
+th:first-child { border-top-left-radius: 10px; }
+th:last-child { border-top-right-radius: 10px; }
+td { 
+    padding: 12px 15px; 
+    border-bottom: 1px solid #eee; 
+    text-align: right; /* Números alineados a la derecha */
+    color: #555;
 }
-
-.form-control:focus {
-    outline: none;
-    border-color: #7b1bda;
-    background: white;
-}
-
-/* Operación Item (Inputs dentro de tarjetas) */
-.operacion-item {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed #e1cdf3;
-}
-
-.card-acciones {
-    margin-top: 15px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-/* --- Modales --- */
-.modal {
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
-    left: 0; 
-    top: 0; 
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(109, 37, 168, 0.4); /* Fondo morado semitransparente */
-    backdrop-filter: blur(4px); /* Efecto borroso */
-    overflow: auto;
-}
-
-.modal-content {
-    background-color: #fff;
-    margin: 5% auto; 
-    padding: 40px; 
-    border-radius: 24px;
-    width: 90%; 
-    max-width: 600px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    position: relative;
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.close-modal {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    position: absolute;
-    right: 25px;
-    top: 20px;
-}
-.close-modal:hover { color: #7b1bda; }
-
-/* --- Tablas --- */
-table { width: 100%; border-collapse: collapse; }
-th { background-color: #f3e5f5; color: #6d25a8; padding: 12px; text-align: left; border-radius: 8px 8px 0 0; }
-td { padding: 12px; border-bottom: 1px solid #eee; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) { background-color: #f9f6fc; } /* Filas alternas */
 
 /* --- Badges --- */
-.status-badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: white;
-}
+.status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; color: white; }
 .status-badge.afiliado { background: #43a047; }
 .status-badge.no-afiliado { background: #e53935; }
-.exenta-badge {
-    background: #7b1bda;
-    color: white;
-    font-size: 0.7rem;
-    padding: 3px 8px;
-    border-radius: 10px;
-    margin-left: 5px;
-}
-
-/* --- Login Cards --- */
-.login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 80vh;
-}
-.login-card-center {
-    width: 100%;
-    max-width: 420px;
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    font-size: 14px;
-    color: #5a4d67;
-    margin-top: 40px;
-    padding-bottom: 20px;
-}
+.exenta-badge { background: #7b1bda; color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; margin-left: 5px; }
+.login-container { display: flex; justify-content: center; align-items: center; height: 80vh; }
+.login-card-center { width: 100%; max-width: 420px; text-align: center;}
+.footer { text-align: center; font-size: 14px; color: #5a4d67; margin-top: 40px; padding-bottom: 20px; }
+/* Listas LIFO */
+#transaccion-lista { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+#transaccion-lista li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+#transaccion-lista li:first-child { font-weight: bold; background: #f9f9f9; }
+.transaccion-monto.RETIRO { color: #e53935; }
+.transaccion-monto.CONSIGNACION { color: #43a047; }
