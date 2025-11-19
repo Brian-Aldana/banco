@@ -1,83 +1,252 @@
-* { box-sizing: border-box; }
-body { margin: 0; padding: 0; background: linear-gradient(to bottom, #ead9f7, #e6d3f5, #e1cdf3); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; min-height: 100vh; display: flex; flex-direction: column; }
-h1 { font-size: 38px; font-weight: 800; margin-bottom: 10px; color: #6d25a8; text-align: center; }
-h2 { font-size: 24px; color: #5a4d67; margin-bottom: 15px; font-weight: 700; }
-h3, h4 { color: #6d25a8; margin-bottom: 10px; }
-.subtitle { font-size: 18px; color: #5a4d67; text-align: center; margin-bottom: 40px; }
-.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; }
+/* static/css/style.css - Diseño Violeta Optimizado */
 
-/* Tarjetas */
-.card { background: white; border-radius: 18px; padding: 30px; box-shadow: 0 6px 25px rgba(170, 117, 200, 0.25); margin-bottom: 20px; transition: transform 0.3s ease; }
-.card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-bottom: 40px; }
-.menu-card { width: 300px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.menu-card:hover { transform: translateY(-8px); }
-.card-icon { font-size: 48px; background: #e8d7f7; color: #6d25a8; padding: 25px; border-radius: 50%; margin-bottom: 20px; display: inline-block; }
-.producto-card { border-left: 6px solid #7b1bda; padding: 20px; margin-bottom: 20px; }
-.producto-card .saldo { font-size: 2rem; font-weight: 800; color: #6d25a8; }
-.producto-card .numero-cuenta { color: #888; font-size: 0.9rem; }
+* {
+    box-sizing: border-box;
+}
 
-/* Botones */
-.btn { background: linear-gradient(90deg, #7b1bda 0%, #b36bff 100%); color: white; border: none; padding: 10px 26px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 6px 18px rgba(123, 27, 218, 0.35); text-decoration: none; display: inline-block; text-align: center; }
-.btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(123, 27, 218, 0.45); }
-.btn-small { padding: 6px 15px; font-size: 14px; border-radius: 8px; }
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom, #ead9f7, #e6d3f5, #e1cdf3);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Tipografía y Títulos --- */
+h1 {
+    font-size: 38px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: #6d25a8;
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+    color: #5a4d67;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+h3, h4 {
+    color: #6d25a8;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #5a4d67;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* --- Contenedor Principal --- */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    flex: 1;
+}
+
+/* --- Tarjetas (Cards) --- */
+.card {
+    background: white;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 6px 25px rgba(170, 117, 200, 0.25);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+/* Contenedor del Menú Principal */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    /* Esto asegura que todas las tarjetas tengan la misma altura */
+    align-items: stretch; 
+}
+
+/* Tarjeta de Menú Específica */
+.menu-card {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 30px; /* Más espacio interno */
+    height: 100%; /* Llena la altura del contenedor flex */
+}
+
+.menu-card:hover {
+    transform: translateY(-8px);
+}
+
+.card-icon {
+    font-size: 48px;
+    background: #e8d7f7; 
+    color: #6d25a8;
+    padding: 25px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.menu-card .card-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.menu-card .card-desc {
+    font-size: 15px;
+    color: #666;
+    /* Esto empuja el botón hacia abajo si el texto es corto */
+    margin-bottom: 30px;
+    flex-grow: 1; 
+}
+
+/* --- Estilos Dashboard --- */
+.producto-card {
+    border-left: 6px solid #7b1bda;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.producto-card .saldo {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #6d25a8;
+}
+.producto-card .numero-cuenta {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* --- Botones --- */
+.btn {
+    background: linear-gradient(90deg, #7b1bda 0%, #b36bff 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px; /* Botones un poco más grandes */
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 18px rgba(123, 27, 218, 0.35);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    min-width: 140px; /* Ancho mínimo para uniformidad */
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(123, 27, 218, 0.45);
+}
+
+/* Botón dentro de la tarjeta de menú */
+.menu-card .btn {
+    margin-top: auto; /* Alineación al fondo siempre */
+}
+
+/* Variantes de botones pequeños */
+.btn-small {
+    padding: 6px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    min-width: auto; /* Quitar ancho mínimo en botones pequeños */
+}
+
 .btn-secondary { background: white; color: #7b1bda; border: 2px solid #7b1bda; box-shadow: none; }
 .btn-secondary:hover { background: #f3e5f5; }
+
 .btn-rojo, .btn-cancelar { background: linear-gradient(90deg, #e53935 0%, #ff6f60 100%); box-shadow: 0 6px 18px rgba(229, 57, 53, 0.35); }
+.btn-rojo:hover, .btn-cancelar:hover { box-shadow: 0 8px 25px rgba(229, 57, 53, 0.45); }
+
 .btn-verde { background: linear-gradient(90deg, #43a047 0%, #76d275 100%); box-shadow: 0 6px 18px rgba(67, 160, 71, 0.35); }
+
 .btn-info { background: linear-gradient(90deg, #0288d1 0%, #4fc3f7 100%); box-shadow: 0 6px 18px rgba(2, 136, 209, 0.35); }
+
 .btn-pagar { background-color: #03A9F4; color: white; }
 
-/* Grids */
+/* --- Grids y Layouts --- */
 .layout-dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
 .layout-cajero { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e1cdf3; flex-wrap: wrap; gap: 10px; }
 
-/* Formularios */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e1cdf3;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* --- Formularios --- */
 .form-group { margin-bottom: 15px; text-align: left; }
 .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #5a4d67; }
-.form-control { width: 100%; padding: 12px; border: 2px solid #e1cdf3; border-radius: 12px; font-size: 15px; background: #fdfbff; transition: border-color 0.3s; }
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e1cdf3;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fdfbff;
+    transition: border-color 0.3s;
+}
 .form-control:focus { outline: none; border-color: #7b1bda; background: white; }
-.operacion-item { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e1cdf3; flex-wrap: wrap; }
-.card-acciones { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; }
 
-/* Modales */
+.operacion-item {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #e1cdf3;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.operacion-item .form-control { flex: 1; min-width: 120px; }
+
+.card-acciones { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* --- Modales --- */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(109, 37, 168, 0.4); backdrop-filter: blur(4px); overflow: auto; }
 .modal-content { background-color: #fff; margin: 5% auto; padding: 40px; border-radius: 24px; width: 90%; max-width: 700px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; animation: slideDown 0.3s ease-out; }
 @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; right: 25px; top: 20px; }
+.close-modal:hover { color: #7b1bda; }
 
-/* --- Tablas Mejoradas (Corrección Títulos Cortados) --- */
+/* --- Tablas --- */
 .table-responsive { overflow-x: auto; border-radius: 10px; margin-top: 15px; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 500px; }
-th { 
-    background-color: #6d25a8; /* Morado oscuro para encabezado */
-    color: white; 
-    padding: 15px; 
-    text-align: center; 
-    white-space: nowrap; /* Evita que el texto se corte o baje */
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-/* Bordes redondeados para la cabecera */
+th { background-color: #6d25a8; color: white; padding: 15px; text-align: center; white-space: nowrap; font-weight: 600; }
 th:first-child { border-top-left-radius: 10px; }
 th:last-child { border-top-right-radius: 10px; }
-td { 
-    padding: 12px 15px; 
-    border-bottom: 1px solid #eee; 
-    text-align: right; /* Números alineados a la derecha */
-    color: #555;
-}
+td { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: right; color: #555; }
 tr:last-child td { border-bottom: none; }
-tr:nth-child(even) { background-color: #f9f6fc; } /* Filas alternas */
+tr:nth-child(even) { background-color: #f9f6fc; }
 
 /* --- Badges --- */
 .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; color: white; }
 .status-badge.afiliado { background: #43a047; }
 .status-badge.no-afiliado { background: #e53935; }
-.exenta-badge { background: #7b1bda; color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; margin-left: 5px; }
+.exenta-badge { background: #7b1bda; color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; margin-left: 5px; vertical-align: middle; }
+
+/* --- Login Cards --- */
 .login-container { display: flex; justify-content: center; align-items: center; height: 80vh; }
 .login-card-center { width: 100%; max-width: 420px; text-align: center;}
 .footer { text-align: center; font-size: 14px; color: #5a4d67; margin-top: 40px; padding-bottom: 20px; }
+
 /* Listas LIFO */
 #transaccion-lista { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
 #transaccion-lista li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
